@@ -18,6 +18,12 @@ The completed envelope records the model identifier, evidence digest, source
 revision, prompt, schema, generation time, and Codex session ID. At runtime the
 artifact is accepted only if its digest still matches the current Git timeline.
 
+Ask the Repo uses a second artifact with three fixed, judge-facing questions.
+Every answer contains event-level citations. Each citation must include the
+event's short commit and at least one file changed in that same event. Unknown
+events, cross-event files, unsupported questions, and mismatched evidence
+digests are rejected before an answer reaches the interface.
+
 ## Optional Responses API design
 
 The backend calls the Responses API with model `gpt-5.6`, medium reasoning, and
@@ -50,6 +56,8 @@ as live analysis.
   from the same Git evidence.
 - The interface labels fallback output as `Evidence fallback · demo safe` and
   never presents it as GPT output.
+- Ask the Repo caches answers in the browser after their first validated load;
+  reopening a question does not perform model work.
 
 ## Output flow
 

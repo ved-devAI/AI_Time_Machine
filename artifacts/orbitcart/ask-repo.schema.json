@@ -1,0 +1,94 @@
+{
+  "type": "object",
+  "properties": {
+    "answers": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "enum": [
+              "pricing-complexity",
+              "stale-price-origin",
+              "change-risk"
+            ]
+          },
+          "question": {
+            "type": "string"
+          },
+          "headline": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "certainty": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "inferred",
+              "missing-evidence"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "type": "string"
+                },
+                "claim": {
+                  "type": "string"
+                },
+                "evidence_refs": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "event_id",
+                "claim",
+                "evidence_refs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "missing_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "question_id",
+          "question",
+          "headline",
+          "answer",
+          "certainty",
+          "confidence",
+          "evidence",
+          "missing_evidence"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "answers"
+  ],
+  "additionalProperties": false
+}

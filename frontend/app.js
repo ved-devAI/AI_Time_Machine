@@ -1,4 +1,4 @@
-const state = { events: [], selectedId: null, filter: "all", investigation: null };
+const state = { events: [], selectedId: null, filter: "all", investigation: null, answers: {} };
 
 const timeline = document.querySelector("#timeline");
 const detail = document.querySelector("#detail-panel");
@@ -79,6 +79,11 @@ function selectEvent(id) {
   renderDetail(event);
 }
 
+function showAllEvents() {
+  state.filter = "all";
+  document.querySelectorAll(".filter").forEach((filter) => filter.classList.toggle("active", filter.dataset.filter === "all"));
+}
+
 function renderDetail(event) {
   const traceable = event.title.toLowerCase().includes("stale checkout");
   const related = event.related_event_ids
@@ -128,6 +133,87 @@ function renderDetail(event) {
 function closeTrace() {
   document.querySelector("#trace-overlay").hidden = true;
   document.body.classList.remove("trace-open");
+}
+
+function closeAsk() {
+  document.querySelector("#ask-overlay").hidden = true;
+  document.body.classList.remove("ask-open");
+}
+
+function answerSource(answer) {
+  if (answer.source === "codex-gpt-5.6") return { label: "GPT-5.6 Sol in Codex · validated", className: "codex" };
+  return { label: "Evidence fallback · demo safe", className: "fallback" };
+}
+
+function renderAskAnswer(answer) {
+  const source = answerSource(answer);
+  const provenance = answer.provenance || null;
+  return `
+    <header class="ask-answer-header">
+      <div><p class="eyebrow">ASK THE REPO / ${escapeHtml(answer.question_id)}</p><h2 id="ask-answer-title">${escapeHtml(answer.question)}</h2></div>
+      <div class="trace-header-actions"><span class="analysis-source ${source.className}"><i></i>${escapeHtml(source.label)}</span><button class="trace-close" data-close-ask aria-label="Close answer">×</button></div>
+    </header>
+    <div class="ask-answer-body">
+      <section class="ask-verdict">
+        <div class="ask-verdict-mark">⌁</div>
+        <div><span class="trace-kicker">EVIDENCE-GROUNDED ANSWER</span><h3>${escapeHtml(answer.headline)}</h3><p>${escapeHtml(answer.answer)}</p></div>
+        <div class="trace-score"><span>${Math.round(answer.confidence * 100)}%</span><small>${escapeHtml(answer.certainty)} confidence</small></div>
+      </section>
+      <section class="ask-citations">
+        <div class="ask-section-title"><div><p class="section-label">TRACEABLE EVIDENCE</p><h3>Open any citation in the timeline</h3></div><span>${answer.evidence.length} VERIFIED LINKS</span></div>
+        <div class="ask-evidence-grid">
+          ${answer.evidence.map((citation, index) => {
+            const event = state.events.find((candidate) => candidate.id === citation.event_id);
+            return `<button class="ask-evidence-card" data-ask-event="${escapeHtml(citation.event_id)}">
+              <span class="ask-evidence-index">${String(index + 1).padStart(2, "0")}</span>
+              <span class="type-badge">${escapeHtml(event ? labels[event.type] : "Evidence")}</span>
+              <strong>${escapeHtml(event?.title || citation.event_id)}</strong>
+              <p>${escapeHtml(citation.claim)}</p>
+              <span class="ask-ref-row"><code>${escapeHtml(event?.short_hash || citation.event_id)}</code><span>${citation.evidence_refs.length} refs</span><b>OPEN EVENT →</b></span>
+            </button>`;
+          }).join("")}
+        </div>
+      </section>
+      <section class="ask-unknowns">
+        <p class="section-label">WHAT THE REPOSITORY CANNOT PROVE</p>
+        <ul>${answer.missing_evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>
+    </div>
+    ${provenance ? `<footer class="trace-audit"><span><i></i>Answer set verified against current Git evidence</span><code>evidence ${escapeHtml(provenance.evidence_sha256.slice(0, 10))}</code><code>session ${escapeHtml(provenance.codex_session_id?.slice(0, 13) || "not recorded")}</code></footer>` : ""}`;
+}
+
+async function askRepo(questionId) {
+  const overlay = document.querySelector("#ask-overlay");
+  const window = document.querySelector("#ask-answer-window");
+  overlay.hidden = false;
+  document.body.classList.add("ask-open");
+  window.innerHTML = `<button class="trace-close loading-close" data-close-ask aria-label="Close answer">×</button><div class="ask-loading"><div class="ask-loader">?</div><p class="eyebrow">READING REPOSITORY EVIDENCE</p><h2 id="ask-answer-title">Following commits, files, and recorded risks…</h2></div>`;
+  window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
+  try {
+    if (!state.answers[questionId]) {
+      const response = await fetch("/api/projects/orbitcart/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question_id: questionId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || `Answer failed (${response.status})`);
+      state.answers[questionId] = payload;
+    }
+    window.innerHTML = renderAskAnswer(state.answers[questionId]);
+    window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
+    window.querySelectorAll("[data-ask-event]").forEach((button) => {
+      button.addEventListener("click", () => {
+        closeAsk();
+        showAllEvents();
+        selectEvent(button.dataset.askEvent);
+        document.querySelector(".workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  } catch (error) {
+    window.innerHTML = `<button class="trace-close loading-close" data-close-ask aria-label="Close answer">×</button><div class="ask-loading"><strong>Answer unavailable</strong><p>${escapeHtml(error.message)}</p></div>`;
+    window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
+  }
 }
 
 function traceNode(item, index, analysis) {
@@ -205,8 +291,7 @@ async function openTrace() {
     window.querySelectorAll("[data-trace-event]").forEach((button) => {
       button.addEventListener("click", () => {
         closeTrace();
-        state.filter = "all";
-        document.querySelectorAll(".filter").forEach((filter) => filter.classList.toggle("active", filter.dataset.filter === "all"));
+        showAllEvents();
         selectEvent(button.dataset.traceEvent);
       });
     });
@@ -246,8 +331,11 @@ document.querySelectorAll(".filter").forEach((button) => {
 });
 
 document.querySelectorAll("[data-close-trace]").forEach((element) => element.addEventListener("click", closeTrace));
+document.querySelectorAll("[data-ask-question]").forEach((button) => button.addEventListener("click", () => askRepo(button.dataset.askQuestion)));
+document.querySelectorAll("[data-close-ask]").forEach((element) => element.addEventListener("click", closeAsk));
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !document.querySelector("#trace-overlay").hidden) closeTrace();
+  if (event.key === "Escape" && !document.querySelector("#ask-overlay").hidden) closeAsk();
 });
 
 loadTimeline();

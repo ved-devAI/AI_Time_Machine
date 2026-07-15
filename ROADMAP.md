@@ -30,7 +30,7 @@ Target: July 16
 
 ### M2 — Ask the Repo
 
-Status: Next
+Status: Complete
 
 Target: July 17
 
@@ -41,7 +41,7 @@ Target: July 17
 
 ### M3 — Evaluation and reliability
 
-Status: Pending
+Status: Next
 
 Target: July 18
 

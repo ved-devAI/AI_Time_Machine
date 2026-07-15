@@ -40,9 +40,17 @@ Working and verified:
 - If the artifact is missing or invalid, the app uses a clearly labeled
   evidence fallback.
 - Successful optional model responses are cached to control cost.
-- Twelve application tests and the OrbitCart regression test pass.
 - The full trace and origin-node navigation are browser verified with no
   console errors.
+- Ask the Repo presents three judge-ready questions covering pricing
+  complexity, stale-price origin, and current change risk.
+- The three answers replay a validated GPT-5.6 Sol Codex artifact and cite only
+  real timeline events, commits, and same-event files.
+- Every citation opens the exact supporting timeline event; fabricated events
+  and cross-event file references are rejected by tests.
+- Ask the Repo records Codex session
+  `019f6643-741f-7c31-a967-6efae9af01b1` and the current evidence digest.
+- Eighteen application tests and the OrbitCart regression test pass.
 - The local app runs at `http://127.0.0.1:8765`.
 
 ## Financial and hackathon constraint
@@ -58,14 +66,13 @@ runtime called GPT-5.6 unless a real live call occurred.
 
 ## Exact next task
 
-Implement **Ask the Repo** with three judge-ready questions:
+Implement **M3 — Evaluation and reliability**:
 
-1. Why is pricing complicated?
-2. When was the stale-price bug introduced?
-3. What would be risky to change now?
-
-Each answer must cite only existing event IDs, commits, and files. Add tests that
-reject nonexistent evidence references.
+1. Add a compact grounding evaluation fixture for all three questions and the
+   Bug Origin Trace.
+2. Cover missing, stale, and deliberately invalid artifact cases.
+3. Verify desktop and mobile layouts.
+4. Make the setup path clean and repeatable for judges.
 
 ## Important implementation paths
 
@@ -73,7 +80,9 @@ reject nonexistent evidence references.
 - `scripts/create_orbitcart.py` — deterministic 12-commit demo repository
 - `app/git_ingest.py` — Git-to-timeline evidence extraction
 - `app/analysis.py` — strict causal-analysis schema, optional API adapter, fallback
+- `app/ask_repo.py` — fixed questions, answer validation, artifact replay, fallback
 - `scripts/codex_artifact.py` — evidence export and artifact validation CLI
+- `scripts/ask_repo_artifact.py` — Ask the Repo schema and artifact CLI
 - `artifacts/orbitcart/` — prompt, schema, evidence, and validated Codex result
 - `app/server.py` — local HTTP and JSON endpoints
 - `frontend/index.html` — application shell
@@ -98,13 +107,15 @@ Open <http://127.0.0.1:8765>.
 python3 -m unittest discover -s tests -v
 PYTHONPATH=.data/orbitcart python3 -m unittest discover -s .data/orbitcart/tests -v
 python3 scripts/codex_artifact.py validate
+python3 scripts/ask_repo_artifact.py validate
 node --check frontend/app.js
 git diff --check
 ```
 
 ## Known gaps
 
-- Ask the Repo is not implemented.
+- Automated grounding evaluation and invalid-artifact fixtures are pending.
+- Mobile browser verification is pending.
 - Deployment, thumbnail, demo video, and Devpost submission copy are pending.
 - The required `/feedback` Codex session ID still needs to be captured for the
   final submission.

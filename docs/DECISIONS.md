@@ -56,3 +56,19 @@ requiring a Platform API key during judging.
 The ChatGPT-authenticated Codex CLI rejected the generic `gpt-5.6` identifier in
 this environment, so the reproducible command records the supported exact model
 identifier `gpt-5.6-sol`. The UI and documentation retain that distinction.
+
+## ADR-007 — Constrain Ask the Repo to three validated questions
+
+Status: Accepted — July 15, 2026
+
+The hackathon slice exposes three high-value repository questions instead of an
+unbounded chat box. GPT-5.6 Sol generates the answer set through Codex at build
+time. Runtime validation requires the exact question IDs and text, known event
+IDs, each cited event's short commit, and at least one file changed by that same
+event. This produces a reliable three-minute demo while preventing unsupported
+prompts or attractive but fabricated citations from entering the interface.
+
+The stale-price answer is labeled inferred at 98% rather than confirmed at
+100%. Git proves which cache change preceded the incident and records its
+missing invalidation path, but it does not prove deployment timing or identify
+the first affected production checkout.

@@ -10,7 +10,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from app.analysis import analyze_bug_origin
+from app.analysis import AnalysisError, analyze_bug_origin
+from app.ask_repo import QUESTIONS, ask_repo
 from app.git_ingest import read_timeline
 
 
@@ -19,6 +20,7 @@ FRONTEND = ROOT / "frontend"
 ORBITCART = ROOT / ".data" / "orbitcart"
 ANALYSIS_CACHE = ROOT / ".data" / "orbitcart-analysis.json"
 CODEX_ARTIFACT = ROOT / "artifacts" / "orbitcart" / "bug-origin.codex.json"
+ASK_REPO_ARTIFACT = ROOT / "artifacts" / "orbitcart" / "ask-repo.codex.json"
 
 
 def load_local_env(path: Path) -> None:
@@ -58,6 +60,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _request_json(self) -> dict[str, object]:
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError as exc:
+            raise ValueError("Invalid request size.") from exc
+        if length <= 0 or length > 4096:
+            raise ValueError("Request body must be between 1 and 4096 bytes.")
+        try:
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("Request body must be valid JSON.") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("Request body must be a JSON object.")
+        return payload
+
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         path = urlparse(self.path).path
         if path == "/api/health":
@@ -71,6 +88,9 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             self._json(read_timeline(ORBITCART))
+            return
+        if path == "/api/projects/orbitcart/questions":
+            self._json({"questions": QUESTIONS})
             return
         if path == "/":
             self._file(FRONTEND / "index.html")
@@ -92,6 +112,22 @@ class Handler(BaseHTTPRequestHandler):
                 return
             timeline = read_timeline(ORBITCART)
             self._json(analyze_bug_origin(timeline, ANALYSIS_CACHE, CODEX_ARTIFACT))
+            return
+        if path == "/api/projects/orbitcart/ask":
+            if not ORBITCART.exists():
+                self._json(
+                    {"error": "OrbitCart has not been generated. Run scripts/create_orbitcart.py."},
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                )
+                return
+            try:
+                payload = self._request_json()
+                question_id = payload.get("question_id")
+                if not isinstance(question_id, str):
+                    raise ValueError("question_id must be a string.")
+                self._json(ask_repo(read_timeline(ORBITCART), question_id, ASK_REPO_ARTIFACT))
+            except (ValueError, AnalysisError) as exc:
+                self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         self._json({"error": "Unknown API endpoint."}, HTTPStatus.NOT_FOUND)
 

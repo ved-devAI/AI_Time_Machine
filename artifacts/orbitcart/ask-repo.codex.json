@@ -1,0 +1,136 @@
+{
+  "artifact_version": 1,
+  "provenance": {
+    "generator": "codex exec",
+    "model": "gpt-5.6-sol",
+    "authentication": "ChatGPT-managed Codex access",
+    "generated_at": "2026-07-15T14:59:25.641631+00:00",
+    "source_revision": "b14dac441ecc5e976ebd54f5d3682450bc96b767",
+    "evidence_sha256": "1b89f838c6bad7839f1ca28add8e852ae76d7677af37a12a42d3af2340d45133",
+    "codex_session_id": "019f6643-741f-7c31-a967-6efae9af01b1",
+    "prompt_path": "artifacts/orbitcart/ask-repo.prompt.md",
+    "schema_path": "artifacts/orbitcart/ask-repo.schema.json"
+  },
+  "payload": {
+    "answers": [
+      {
+        "question_id": "pricing-complexity",
+        "question": "Why is pricing complicated?",
+        "headline": "Pricing accumulated promotions, time rules, and cache correctness in one critical path.",
+        "answer": "Pricing began as simple product totals, then checkout added combinable promotion codes, duplicate-code protection, explicit time handling, and centralized pricing decisions. Performance pressure later added caching, which introduced catalog-version and invalidation requirements. The repository therefore confirms that pricing complexity grew through successive correctness and performance constraints.",
+        "certainty": "confirmed",
+        "confidence": 0.98,
+        "evidence": [
+          {
+            "event_id": "event-92dcbca",
+            "claim": "Checkout added lists of percentage promotion codes, including a recorded risk that multiple codes could be combined without a policy check.",
+            "evidence_refs": [
+              "92dcbca",
+              "orbitcart/discounts.py"
+            ]
+          },
+          {
+            "event_id": "event-699d00b",
+            "claim": "Discount calculation and time-dependent promotion rules were centralized in pricing, making it a critical dependency for every checkout.",
+            "evidence_refs": [
+              "699d00b",
+              "orbitcart/pricing.py"
+            ]
+          },
+          {
+            "event_id": "event-1509f33",
+            "claim": "Safe caching added catalog-version keys and explicit invalidation, while requiring callers to advance the version when prices change.",
+            "evidence_refs": [
+              "1509f33",
+              "orbitcart/cache.py",
+              "orbitcart/pricing.py"
+            ]
+          }
+        ],
+        "missing_evidence": [
+          "No production call graph quantifies all pricing consumers.",
+          "No production metrics quantify the current cost of pricing complexity."
+        ]
+      },
+      {
+        "question_id": "stale-price-origin",
+        "question": "When was the stale-price bug introduced?",
+        "headline": "The stale-price defect originated in commit 8c19a37 on March 27, 2026.",
+        "answer": "The repository confirms that commit 8c19a37 introduced an in-memory price cache with no invalidation path when catalog prices changed. Commit b24472a later recorded the resulting stale-checkout-price incident and explicitly attributed it to indefinite caching that did not observe catalog changes.",
+        "certainty": "inferred",
+        "confidence": 0.98,
+        "evidence": [
+          {
+            "event_id": "event-8c19a37",
+            "claim": "The price cache was introduced without a catalog-change invalidation path.",
+            "evidence_refs": [
+              "8c19a37",
+              "orbitcart/cache.py",
+              "orbitcart/pricing.py"
+            ]
+          },
+          {
+            "event_id": "event-b24472a",
+            "claim": "The later OC-52 report connected stale checkout prices to the cache retaining prices indefinitely.",
+            "evidence_refs": [
+              "b24472a",
+              "history/issues/OC-52.md"
+            ]
+          }
+        ],
+        "missing_evidence": [
+          "The evidence does not identify the exact production deployment time of commit 8c19a37.",
+          "The evidence does not identify the first affected checkout."
+        ]
+      },
+      {
+        "question_id": "change-risk",
+        "question": "What would be risky to change now?",
+        "headline": "Pricing, cache versioning, and their integration contract are the highest-risk change area.",
+        "answer": "It is reasonable to infer that changes to orbitcart/pricing.py, orbitcart/cache.py, or the catalog-version contract are risky. Pricing serves every checkout, the first cache design caused stale totals, rollback restored correctness at the cost of performance, and the replacement depends on callers advancing catalog versions. Changes should preserve the regression behavior proving that a new catalog version cannot reuse an old cached price.",
+        "certainty": "inferred",
+        "confidence": 0.94,
+        "evidence": [
+          {
+            "event_id": "event-699d00b",
+            "claim": "Centralization made the pricing module a critical dependency for every checkout.",
+            "evidence_refs": [
+              "699d00b",
+              "orbitcart/pricing.py"
+            ]
+          },
+          {
+            "event_id": "event-3b1b4d7",
+            "claim": "Disabling cache reads protected correct totals but risked returning the earlier performance symptoms.",
+            "evidence_refs": [
+              "3b1b4d7",
+              "orbitcart/pricing.py"
+            ]
+          },
+          {
+            "event_id": "event-1509f33",
+            "claim": "The corrected cache design depends on catalog-version updates and explicit invalidation behavior.",
+            "evidence_refs": [
+              "1509f33",
+              "orbitcart/cache.py",
+              "orbitcart/pricing.py"
+            ]
+          },
+          {
+            "event_id": "event-a095037",
+            "claim": "A regression test protects the rule that a new catalog version must not reuse an old cached price.",
+            "evidence_refs": [
+              "a095037",
+              "tests/test_pricing.py"
+            ]
+          }
+        ],
+        "missing_evidence": [
+          "No complete inventory of catalog callers confirms which components correctly increment versions.",
+          "No production load or monitoring data establishes the current cache-performance margin.",
+          "No evidence describes concurrency, persistence, or multi-process cache behavior."
+        ]
+      }
+    ]
+  }
+}

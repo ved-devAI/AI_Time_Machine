@@ -43,6 +43,19 @@
         <div><span>EVIDENCE COVERAGE</span><strong id="stat-coverage">—</strong></div>
       </section>
 
+      <section class="ask-repo" aria-labelledby="ask-repo-title">
+        <div class="ask-repo-intro">
+          <span class="ask-mark">✦</span>
+          <div><p class="eyebrow">ASK THE REPO</p><h2 id="ask-repo-title">Question the history, not just the code.</h2></div>
+          <span class="ask-grounded"><i></i> Answers cite Git evidence</span>
+        </div>
+        <div class="ask-prompts" aria-label="Suggested repository questions">
+          <button data-ask-question="pricing-complexity"><span>01</span> Why is pricing complicated?</button>
+          <button data-ask-question="stale-price-origin"><span>02</span> When was the stale-price bug introduced?</button>
+          <button data-ask-question="change-risk"><span>03</span> What would be risky to change now?</button>
+        </div>
+      </section>
+
       <section class="workspace">
         <aside class="timeline-panel">
           <div class="panel-heading">
@@ -72,6 +85,10 @@
     <section class="trace-overlay" id="trace-overlay" role="dialog" aria-modal="true" aria-labelledby="trace-title" hidden>
       <div class="trace-backdrop" data-close-trace></div>
       <div class="trace-window" id="trace-window"></div>
+    </section>
+    <section class="ask-overlay" id="ask-overlay" role="dialog" aria-modal="true" aria-labelledby="ask-answer-title" hidden>
+      <div class="ask-backdrop" data-close-ask></div>
+      <div class="ask-answer-window" id="ask-answer-window"></div>
     </section>
     <script src="/app.js" defer></script>
   </body>

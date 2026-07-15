@@ -28,6 +28,7 @@ Run before committing a milestone:
 python3 -m unittest discover -s tests -v
 PYTHONPATH=.data/orbitcart python3 -m unittest discover -s .data/orbitcart/tests -v
 python3 scripts/codex_artifact.py validate
+python3 scripts/ask_repo_artifact.py validate
 node --check frontend/app.js
 git diff --check
 ```
