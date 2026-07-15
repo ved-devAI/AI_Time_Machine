@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import urllib.error
@@ -13,6 +14,7 @@ from typing import Any
 
 DEFAULT_MODEL = "gpt-5.6"
 RESPONSES_URL = "https://api.openai.com/v1/responses"
+CAUSAL_ROLES = ["pressure", "origin", "symptom", "containment", "resolution", "verification"]
 
 ANALYSIS_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -27,13 +29,15 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
         "resolution_event_ids": {"type": "array", "items": {"type": "string"}},
         "causal_chain": {
             "type": "array",
+            "minItems": 6,
+            "maxItems": 6,
             "items": {
                 "type": "object",
                 "properties": {
                     "event_id": {"type": "string"},
                     "role": {
                         "type": "string",
-                        "enum": ["pressure", "origin", "symptom", "containment", "resolution", "verification"],
+                        "enum": CAUSAL_ROLES,
                     },
                     "explanation": {"type": "string"},
                     "evidence_refs": {"type": "array", "items": {"type": "string"}},
@@ -154,8 +158,8 @@ def deterministic_investigation(timeline: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _timeline_prompt(timeline: dict[str, Any]) -> str:
-    evidence = [
+def timeline_evidence(timeline: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
         {
             "event_id": event["id"],
             "commit": event["short_hash"],
@@ -169,7 +173,15 @@ def _timeline_prompt(timeline: dict[str, Any]) -> str:
         }
         for event in timeline["events"]
     ]
-    return json.dumps(evidence, ensure_ascii=False, separators=(",", ":"))
+
+
+def _timeline_prompt(timeline: dict[str, Any]) -> str:
+    return json.dumps(timeline_evidence(timeline), ensure_ascii=False, separators=(",", ":"))
+
+
+def evidence_digest(timeline: dict[str, Any]) -> str:
+    canonical = _timeline_prompt(timeline).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def _extract_output_text(response: dict[str, Any]) -> str:
@@ -185,8 +197,9 @@ def _extract_output_text(response: dict[str, Any]) -> str:
     raise AnalysisError("The model response did not contain structured output text.")
 
 
-def _validate_analysis(analysis: dict[str, Any], timeline: dict[str, Any]) -> dict[str, Any]:
-    event_ids = {event["id"] for event in timeline["events"]}
+def validate_analysis(analysis: dict[str, Any], timeline: dict[str, Any]) -> dict[str, Any]:
+    event_by_id = {event["id"]: event for event in timeline["events"]}
+    event_ids = set(event_by_id)
     referenced_ids = {
         analysis.get("origin_event_id"),
         analysis.get("trigger_event_id"),
@@ -199,8 +212,19 @@ def _validate_analysis(analysis: dict[str, Any], timeline: dict[str, Any]) -> di
     confidence = analysis.get("confidence")
     if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
         raise AnalysisError("The analysis confidence was invalid.")
-    if not analysis.get("causal_chain"):
-        raise AnalysisError("The analysis did not produce a causal chain.")
+    chain = analysis.get("causal_chain")
+    if not isinstance(chain, list) or [item.get("role") for item in chain] != CAUSAL_ROLES:
+        raise AnalysisError("The analysis must contain the complete six-stage causal chain.")
+    for item in chain:
+        event = event_by_id[item["event_id"]]
+        allowed_refs = {
+            event["short_hash"],
+            event["commit_hash"],
+            *[file["path"] for file in event["files"]],
+        }
+        references = item.get("evidence_refs", [])
+        if not references or any(reference not in allowed_refs for reference in references):
+            raise AnalysisError("The analysis cited evidence outside its referenced event.")
     return analysis
 
 
@@ -257,22 +281,54 @@ def request_gpt_analysis(timeline: dict[str, Any], api_key: str, model: str = DE
         analysis = json.loads(_extract_output_text(raw))
     except json.JSONDecodeError as exc:
         raise AnalysisError("The structured model response was not valid JSON.") from exc
-    result = _validate_analysis(analysis, timeline)
+    result = validate_analysis(analysis, timeline)
     result["response_id"] = raw.get("id")
     return result
 
 
-def analyze_bug_origin(timeline: dict[str, Any], cache_path: Path | None = None) -> dict[str, Any]:
-    """Return cached/live GPT analysis, falling back safely to known evidence."""
+def load_codex_artifact(timeline: dict[str, Any], artifact_path: Path) -> dict[str, Any]:
+    envelope = json.loads(artifact_path.read_text(encoding="utf-8"))
+    if envelope.get("artifact_version") != 1:
+        raise AnalysisError("The Codex artifact version is unsupported.")
+    provenance = envelope.get("provenance", {})
+    model = provenance.get("model", "")
+    if provenance.get("generator") != "codex exec" or not model.startswith("gpt-5.6"):
+        raise AnalysisError("The Codex artifact provenance is invalid.")
+    if provenance.get("evidence_sha256") != evidence_digest(timeline):
+        raise AnalysisError("The Codex artifact does not match the current Git evidence.")
+    analysis = validate_analysis(envelope.get("analysis", {}), timeline)
+    return {
+        **analysis,
+        "source": "codex-gpt-5.6",
+        "model": model,
+        "delivery": "validated-artifact",
+        "generated_at": provenance.get("generated_at"),
+        "provenance": provenance,
+    }
+
+
+def analyze_bug_origin(
+    timeline: dict[str, Any],
+    cache_path: Path | None = None,
+    artifact_path: Path | None = None,
+) -> dict[str, Any]:
+    """Return a validated Codex artifact, optional live output, or safe fallback."""
 
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     model = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    mode = os.environ.get("AI_TIME_MACHINE_ANALYSIS_MODE", "artifact").strip().lower()
 
-    if api_key and cache_path and cache_path.exists():
+    if mode == "artifact" and artifact_path and artifact_path.exists():
+        try:
+            return load_codex_artifact(timeline, artifact_path)
+        except (AnalysisError, KeyError, json.JSONDecodeError):
+            pass
+
+    if mode == "live" and api_key and cache_path and cache_path.exists():
         cached = json.loads(cache_path.read_text(encoding="utf-8"))
         return {**cached, "delivery": "cached"}
 
-    if api_key:
+    if mode == "live" and api_key:
         try:
             analysis = request_gpt_analysis(timeline, api_key, model)
             result = {
@@ -296,4 +352,3 @@ def analyze_bug_origin(timeline: dict[str, Any], cache_path: Path | None = None)
         "delivery": "fallback",
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
-

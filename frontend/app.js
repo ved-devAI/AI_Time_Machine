@@ -94,7 +94,7 @@ function renderDetail(event) {
     </header>
     ${traceable ? `
       <section class="trace-cta">
-        <div><span class="trace-kicker">✦ CAUSAL INVESTIGATION</span><strong>Find where this bug really began</strong><p>Rewind the evidence with structured GPT-5.6 analysis.</p></div>
+        <div><span class="trace-kicker">✦ CAUSAL INVESTIGATION</span><strong>Find where this bug really began</strong><p>Replay a validated Codex analysis grounded in Git evidence.</p></div>
         <button class="trace-button" id="trace-origin-button"><span>↶</span> Trace bug origin</button>
       </section>` : ""}
     <div class="detail-body">
@@ -146,9 +146,14 @@ function traceNode(item, index, analysis) {
 }
 
 function renderInvestigation(analysis) {
-  const sourceLabel = analysis.source === "gpt-5.6" ? `GPT-5.6 · ${analysis.delivery}` : "Evidence fallback · demo safe";
-  const sourceClass = analysis.source === "gpt-5.6" ? "live" : "fallback";
+  const sourceLabel = analysis.source === "codex-gpt-5.6"
+    ? "GPT-5.6 Sol in Codex · validated"
+    : analysis.source === "gpt-5.6"
+      ? `GPT-5.6 API · ${analysis.delivery}`
+      : "Evidence fallback · demo safe";
+  const sourceClass = analysis.source === "codex-gpt-5.6" ? "codex" : analysis.source === "gpt-5.6" ? "live" : "fallback";
   const origin = state.events.find((event) => event.id === analysis.origin_event_id);
+  const provenance = analysis.provenance || null;
   return `
     <header class="trace-header">
       <div><p class="eyebrow">BUG ORIGIN TRACE / OC-52</p><h2 id="trace-title">Rewinding the stale-price incident</h2></div>
@@ -176,7 +181,8 @@ function renderInvestigation(analysis) {
         <p class="section-label">REMAINING RISK</p>
         <ul>${analysis.risks.slice(0, 2).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
       </section>
-    </div>`;
+    </div>
+    ${provenance ? `<footer class="trace-audit"><span><i></i>Artifact verified against current Git evidence</span><code>evidence ${escapeHtml(provenance.evidence_sha256.slice(0, 10))}</code><code>session ${escapeHtml(provenance.codex_session_id?.slice(0, 13) || "not recorded")}</code></footer>` : ""}`;
 }
 
 async function openTrace() {

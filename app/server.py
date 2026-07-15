@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
 ORBITCART = ROOT / ".data" / "orbitcart"
 ANALYSIS_CACHE = ROOT / ".data" / "orbitcart-analysis.json"
+CODEX_ARTIFACT = ROOT / "artifacts" / "orbitcart" / "bug-origin.codex.json"
 
 
 def load_local_env(path: Path) -> None:
@@ -90,7 +91,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             timeline = read_timeline(ORBITCART)
-            self._json(analyze_bug_origin(timeline, ANALYSIS_CACHE))
+            self._json(analyze_bug_origin(timeline, ANALYSIS_CACHE, CODEX_ARTIFACT))
             return
         self._json({"error": "Unknown API endpoint."}, HTTPStatus.NOT_FOUND)
 

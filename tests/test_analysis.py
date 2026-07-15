@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -8,7 +9,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.analysis import ANALYSIS_SCHEMA, analyze_bug_origin, deterministic_investigation
+from app.analysis import (
+    ANALYSIS_SCHEMA,
+    AnalysisError,
+    analyze_bug_origin,
+    deterministic_investigation,
+    evidence_digest,
+    load_codex_artifact,
+    validate_analysis,
+)
 from app.git_ingest import read_timeline
 
 
@@ -50,7 +59,11 @@ class AnalysisTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             cache = Path(directory) / "analysis.json"
             with (
-                patch.dict(os.environ, {"OPENAI_API_KEY": "test-key", "OPENAI_MODEL": "gpt-5.6"}, clear=True),
+                patch.dict(os.environ, {
+                    "OPENAI_API_KEY": "test-key",
+                    "OPENAI_MODEL": "gpt-5.6",
+                    "AI_TIME_MACHINE_ANALYSIS_MODE": "live",
+                }, clear=True),
                 patch("app.analysis.request_gpt_analysis", return_value=model_result) as request,
             ):
                 result = analyze_bug_origin(self.timeline, cache)
@@ -58,6 +71,61 @@ class AnalysisTests(unittest.TestCase):
             self.assertEqual(result["delivery"], "live")
             self.assertTrue(cache.exists())
             request.assert_called_once()
+
+    def test_validator_rejects_evidence_from_a_different_event(self) -> None:
+        analysis = deterministic_investigation(self.timeline)
+        analysis["causal_chain"][0]["evidence_refs"] = ["not-a-real-commit"]
+        with self.assertRaises(AnalysisError):
+            validate_analysis(analysis, self.timeline)
+
+    def test_valid_codex_artifact_is_loaded_offline(self) -> None:
+        analysis = deterministic_investigation(self.timeline)
+        envelope = {
+            "artifact_version": 1,
+            "provenance": {
+                "generator": "codex exec",
+                "model": "gpt-5.6-sol",
+                "generated_at": "2026-07-15T00:00:00+00:00",
+                "evidence_sha256": evidence_digest(self.timeline),
+            },
+            "analysis": analysis,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "artifact.json"
+            path.write_text(json.dumps(envelope), encoding="utf-8")
+            result = load_codex_artifact(self.timeline, path)
+        self.assertEqual(result["source"], "codex-gpt-5.6")
+        self.assertEqual(result["delivery"], "validated-artifact")
+
+    def test_artifact_with_wrong_evidence_digest_is_rejected(self) -> None:
+        envelope = {
+            "artifact_version": 1,
+            "provenance": {
+                "generator": "codex exec",
+                "model": "gpt-5.6-sol",
+                "evidence_sha256": "wrong",
+            },
+            "analysis": deterministic_investigation(self.timeline),
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "artifact.json"
+            path.write_text(json.dumps(envelope), encoding="utf-8")
+            with self.assertRaises(AnalysisError):
+                load_codex_artifact(self.timeline, path)
+
+    def test_incomplete_causal_chain_is_rejected(self) -> None:
+        analysis = deterministic_investigation(self.timeline)
+        analysis["causal_chain"].pop()
+        with self.assertRaises(AnalysisError):
+            validate_analysis(analysis, self.timeline)
+
+    def test_committed_codex_artifact_matches_current_evidence(self) -> None:
+        artifact = ROOT / "artifacts" / "orbitcart" / "bug-origin.codex.json"
+        result = analyze_bug_origin(self.timeline, artifact_path=artifact)
+        self.assertEqual(result["source"], "codex-gpt-5.6")
+        self.assertEqual(result["model"], "gpt-5.6-sol")
+        self.assertEqual(len(result["causal_chain"]), 6)
+        self.assertTrue(result["provenance"]["codex_session_id"])
 
 
 if __name__ == "__main__":

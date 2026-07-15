@@ -1,0 +1,94 @@
+{
+  "artifact_version": 1,
+  "provenance": {
+    "generator": "codex exec",
+    "model": "gpt-5.6-sol",
+    "authentication": "ChatGPT-managed Codex access",
+    "generated_at": "2026-07-15T14:31:40.309753+00:00",
+    "source_revision": "85a2c6db876e37431a4047261444d208b3a6b1c7",
+    "evidence_sha256": "1b89f838c6bad7839f1ca28add8e852ae76d7677af37a12a42d3af2340d45133",
+    "codex_session_id": "019f662f-d32a-7db2-9977-560867fef985",
+    "prompt_path": "artifacts/orbitcart/analysis.prompt.md",
+    "schema_path": "artifacts/orbitcart/analysis.schema.json"
+  },
+  "analysis": {
+    "question": "When was the stale-price bug introduced, and why?",
+    "headline": "The March 27 price cache introduced the stale-price failure",
+    "finding": "The bug was most likely introduced by event-8c19a37 on 2026-03-27. To address OC-44 latency, commit 8c19a37 cached product prices without an invalidation path. Event-b24472a later confirmed checkout could retain an old price after catalog updates.",
+    "certainty": "inferred",
+    "confidence": 0.98,
+    "origin_event_id": "event-8c19a37",
+    "trigger_event_id": "event-b24472a",
+    "resolution_event_ids": [
+      "event-3b1b4d7",
+      "event-1509f33"
+    ],
+    "causal_chain": [
+      {
+        "event_id": "event-4d1810a",
+        "role": "pressure",
+        "explanation": "Commit 4d1810a recorded repeated pricing latency in large carts, creating pressure to reduce product lookups.",
+        "evidence_refs": [
+          "4d1810a",
+          "history/issues/OC-44.md"
+        ]
+      },
+      {
+        "event_id": "event-8c19a37",
+        "role": "origin",
+        "explanation": "Commit 8c19a37 added an in-memory price cache with no invalidation path; this is the most likely introduction of the stale-price bug.",
+        "evidence_refs": [
+          "8c19a37",
+          "orbitcart/cache.py",
+          "orbitcart/pricing.py"
+        ]
+      },
+      {
+        "event_id": "event-b24472a",
+        "role": "symptom",
+        "explanation": "Commit b24472a recorded OC-52: checkout retained an old price after a catalog update.",
+        "evidence_refs": [
+          "b24472a",
+          "history/issues/OC-52.md"
+        ]
+      },
+      {
+        "event_id": "event-3b1b4d7",
+        "role": "containment",
+        "explanation": "Commit 3b1b4d7 disabled cache reads to restore correct totals while a safe design was prepared.",
+        "evidence_refs": [
+          "3b1b4d7",
+          "orbitcart/pricing.py"
+        ]
+      },
+      {
+        "event_id": "event-1509f33",
+        "role": "resolution",
+        "explanation": "Commit 1509f33 reintroduced caching with catalog-version keys and explicit invalidation.",
+        "evidence_refs": [
+          "1509f33",
+          "orbitcart/cache.py",
+          "orbitcart/pricing.py"
+        ]
+      },
+      {
+        "event_id": "event-a095037",
+        "role": "verification",
+        "explanation": "Commit a095037 added a regression test proving that a new catalog version cannot reuse an old cached price.",
+        "evidence_refs": [
+          "a095037",
+          "tests/test_pricing.py"
+        ]
+      }
+    ],
+    "missing_evidence": [
+      "Production telemetry showing the exact first stale-price occurrence is absent.",
+      "The evidence does not quantify affected orders, customer impact, or overcharge and undercharge amounts.",
+      "Production-load results for the versioned cache are absent."
+    ],
+    "risks": [
+      "Catalog callers must increment the catalog version whenever a product price changes.",
+      "Cache performance under production load still requires monitoring."
+    ]
+  }
+}

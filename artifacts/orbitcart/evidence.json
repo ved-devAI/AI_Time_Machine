@@ -1,0 +1,199 @@
+{
+  "artifact_version": 1,
+  "project": {
+    "id": "orbitcart",
+    "name": "OrbitCart",
+    "description": "Checkout service with a traceable pricing incident",
+    "branch": "main"
+  },
+  "evidence_sha256": "1b89f838c6bad7839f1ca28add8e852ae76d7677af37a12a42d3af2340d45133",
+  "events": [
+    {
+      "event_id": "event-236b2cc",
+      "commit": "236b2cc",
+      "date": "2026-01-08T09:30:00Z",
+      "type": "feature",
+      "title": "Launch the first pricing flow",
+      "summary": "Added a minimal checkout calculation based on product prices.",
+      "recorded_reason": "OrbitCart needed a reliable baseline before promotions and payment processing.",
+      "recorded_risks": [
+        "Pricing rules are intentionally simple and do not yet support discounts."
+      ],
+      "files": [
+        "README.md",
+        "orbitcart/__init__.py",
+        "orbitcart/checkout.py",
+        "orbitcart/pricing.py"
+      ]
+    },
+    {
+      "event_id": "event-92dcbca",
+      "commit": "92dcbca",
+      "date": "2026-01-19T11:15:00Z",
+      "type": "feature",
+      "title": "Support promotional codes at checkout",
+      "summary": "Added percentage discount codes and allowed checkout to apply a list of codes.",
+      "recorded_reason": "Marketing needed launch promotions for new customers.",
+      "recorded_risks": [
+        "Multiple codes can currently be combined without a policy check."
+      ],
+      "files": [
+        "orbitcart/checkout.py",
+        "orbitcart/discounts.py"
+      ]
+    },
+    {
+      "event_id": "event-934d898",
+      "commit": "934d898",
+      "date": "2026-02-02T14:20:00Z",
+      "type": "bug",
+      "title": "Document duplicate discount incident OC-17",
+      "summary": "Recorded a production report showing the same promotion being applied twice.",
+      "recorded_reason": "The original discount loop trusted the incoming list and had no uniqueness rule.",
+      "recorded_risks": [
+        "Orders can be undercharged when clients resend a code."
+      ],
+      "files": [
+        "history/issues/OC-17.md"
+      ]
+    },
+    {
+      "event_id": "event-2305fff",
+      "commit": "2305fff",
+      "date": "2026-02-03T10:05:00Z",
+      "type": "fix",
+      "title": "Reject duplicate promotion applications",
+      "summary": "Deduplicated promotion codes before calculating the order total.",
+      "recorded_reason": "This closes OC-17 with a narrow validation guard.",
+      "recorded_risks": [
+        "Promotion policy remains embedded in checkout and may become difficult to extend."
+      ],
+      "files": [
+        "orbitcart/checkout.py"
+      ]
+    },
+    {
+      "event_id": "event-6aa1285",
+      "commit": "6aa1285",
+      "date": "2026-02-26T18:40:00Z",
+      "type": "bug",
+      "title": "Capture timezone expiry failure OC-31",
+      "summary": "Documented promotion expiry differences between server time and customer time.",
+      "recorded_reason": "Date handling was added informally as campaigns became more complex.",
+      "recorded_risks": [
+        "Valid promotions can be rejected around midnight."
+      ],
+      "files": [
+        "history/issues/OC-31.md"
+      ]
+    },
+    {
+      "event_id": "event-699d00b",
+      "commit": "699d00b",
+      "date": "2026-03-04T08:50:00Z",
+      "type": "refactor",
+      "title": "Centralize totals and promotion rules",
+      "summary": "Moved discount calculation into a single pricing module and made time an explicit input.",
+      "recorded_reason": "Fixing OC-31 safely required one consistent location for pricing decisions.",
+      "recorded_risks": [
+        "The pricing module is now a critical dependency for every checkout."
+      ],
+      "files": [
+        "orbitcart/checkout.py",
+        "orbitcart/pricing.py"
+      ]
+    },
+    {
+      "event_id": "event-4d1810a",
+      "commit": "4d1810a",
+      "date": "2026-03-23T16:10:00Z",
+      "type": "performance",
+      "title": "Record repeated pricing latency OC-44",
+      "summary": "Captured evidence that repeated pricing calculations slowed large carts.",
+      "recorded_reason": "Centralization made correctness clearer but placed more work on the checkout path.",
+      "recorded_risks": [
+        "Checkout abandonment may increase if latency continues to rise."
+      ],
+      "files": [
+        "history/issues/OC-44.md"
+      ]
+    },
+    {
+      "event_id": "event-8c19a37",
+      "commit": "8c19a37",
+      "date": "2026-03-27T12:35:00Z",
+      "type": "performance",
+      "title": "Cache product prices during checkout",
+      "summary": "Added an in-memory price cache to avoid repeated product lookups.",
+      "recorded_reason": "This directly addresses the latency reported in OC-44.",
+      "recorded_risks": [
+        "Cached prices have no invalidation path when catalog prices change."
+      ],
+      "files": [
+        "orbitcart/cache.py",
+        "orbitcart/pricing.py"
+      ]
+    },
+    {
+      "event_id": "event-b24472a",
+      "commit": "b24472a",
+      "date": "2026-04-01T07:45:00Z",
+      "type": "bug",
+      "title": "Report stale checkout prices OC-52",
+      "summary": "Recorded that checkout can retain an old price after a catalog update.",
+      "recorded_reason": "The new cache stores prices indefinitely and never observes catalog changes.",
+      "recorded_risks": [
+        "Customers may be overcharged or undercharged."
+      ],
+      "files": [
+        "history/issues/OC-52.md"
+      ]
+    },
+    {
+      "event_id": "event-3b1b4d7",
+      "commit": "3b1b4d7",
+      "date": "2026-04-01T13:25:00Z",
+      "type": "rollback",
+      "title": "Disable unsafe price cache",
+      "summary": "Removed cache reads from pricing while preserving the module for follow-up work.",
+      "recorded_reason": "Correct totals are more important than the latency improvement.",
+      "recorded_risks": [
+        "OC-44 performance symptoms may return until a safe design ships."
+      ],
+      "files": [
+        "orbitcart/pricing.py"
+      ]
+    },
+    {
+      "event_id": "event-1509f33",
+      "commit": "1509f33",
+      "date": "2026-04-09T09:55:00Z",
+      "type": "fix",
+      "title": "Key prices by catalog version",
+      "summary": "Reintroduced caching with catalog versions and an explicit invalidation function.",
+      "recorded_reason": "Versioned keys preserve the OC-44 speedup without retaining obsolete prices.",
+      "recorded_risks": [
+        "Catalog callers must increment the version whenever a product price changes."
+      ],
+      "files": [
+        "orbitcart/cache.py",
+        "orbitcart/pricing.py"
+      ]
+    },
+    {
+      "event_id": "event-a095037",
+      "commit": "a095037",
+      "date": "2026-04-10T15:30:00Z",
+      "type": "test",
+      "title": "Prevent stale price regression",
+      "summary": "Added a regression test proving a new catalog version cannot reuse an old cached price.",
+      "recorded_reason": "OC-52 needs executable evidence that the corrected behavior remains safe.",
+      "recorded_risks": [
+        "Cache performance under production load still requires monitoring."
+      ],
+      "files": [
+        "tests/test_pricing.py"
+      ]
+    }
+  ]
+}

@@ -18,7 +18,7 @@ Status: Complete
 
 ### M1 — API-free Codex analysis artifact
 
-Status: Next
+Status: Complete
 
 Target: July 16
 
@@ -30,7 +30,7 @@ Target: July 16
 
 ### M2 — Ask the Repo
 
-Status: Pending
+Status: Next
 
 Target: July 17
 
@@ -74,4 +74,3 @@ Target: July 20
 - Verify repository, deployment, video, and links
 
 July 21 is reserved only for submission verification and emergencies.
-

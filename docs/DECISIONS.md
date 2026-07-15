@@ -42,3 +42,17 @@ The stale-price caching incident is the flagship flow. A polished causal rewind
 with uncertainty and evidence is more valuable for judging than broad but
 shallow repository features.
 
+## ADR-006 — Commit a validated Codex analysis artifact
+
+Status: Accepted — July 15, 2026
+
+The primary investigation is generated at build time by GPT-5.6 Sol through
+ChatGPT-authenticated `codex exec`, then committed as a versioned artifact. The
+app accepts it only when its evidence digest matches the current OrbitCart
+timeline and every causal stage cites the referenced event's real commit or
+files. This makes GPT-5.6's contribution reproducible and visible without
+requiring a Platform API key during judging.
+
+The ChatGPT-authenticated Codex CLI rejected the generic `gpt-5.6` identifier in
+this environment, so the reproducible command records the supported exact model
+identifier `gpt-5.6-sol`. The UI and documentation retain that distinction.

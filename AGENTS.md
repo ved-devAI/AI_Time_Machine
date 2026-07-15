@@ -27,6 +27,7 @@ Run before committing a milestone:
 ```bash
 python3 -m unittest discover -s tests -v
 PYTHONPATH=.data/orbitcart python3 -m unittest discover -s .data/orbitcart/tests -v
+python3 scripts/codex_artifact.py validate
 node --check frontend/app.js
 git diff --check
 ```
@@ -46,4 +47,3 @@ After each major session, refresh the top snapshot in `CONTEXT.md` with:
 Update `ROADMAP.md` milestone statuses and append material architecture choices
 to `docs/DECISIONS.md`. Do not place secrets, tokens, API keys, or private key
 material in any handoff file.
-
