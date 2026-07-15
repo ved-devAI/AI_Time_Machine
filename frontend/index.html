@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Travel through the history of a codebase and uncover why it evolved." />
+    <title>AI Time Machine</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="AI Time Machine home">
+          <span class="brand-mark"><span></span></span>
+          <span><strong>AI Time Machine</strong><small>CODEBASE HISTORY INTELLIGENCE</small></span>
+        </a>
+        <div class="topbar-actions">
+          <span class="live-pill"><i></i> Evidence live</span>
+          <button class="icon-button" aria-label="Repository settings">⌘</button>
+        </div>
+      </header>
+
+      <section class="hero-strip">
+        <div>
+          <p class="eyebrow">REPOSITORY / <span>ORBITCART</span></p>
+          <h1>Understand <em>why</em> your code evolved.</h1>
+          <p>Travel through engineering decisions, incidents, and fixes—all grounded in Git evidence.</p>
+        </div>
+        <div class="repo-card">
+          <div class="repo-icon">OC</div>
+          <div><strong id="project-name">Loading history…</strong><span id="project-description">Reading repository evidence</span></div>
+          <span class="branch"><i>⑂</i> <span id="branch-name">main</span></span>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Repository statistics">
+        <div><span>COMMITS ANALYZED</span><strong id="stat-commits">—</strong></div>
+        <div><span>INCIDENTS FOUND</span><strong id="stat-bugs">—</strong></div>
+        <div><span>FILES CONNECTED</span><strong id="stat-files">—</strong></div>
+        <div><span>EVIDENCE COVERAGE</span><strong id="stat-coverage">—</strong></div>
+      </section>
+
+      <section class="workspace">
+        <aside class="timeline-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">TEMPORAL MAP</p><h2>Repository timeline</h2></div>
+            <span class="count" id="event-count">0 EVENTS</span>
+          </div>
+          <div class="filters" id="filters" aria-label="Filter events">
+            <button class="filter active" data-filter="all">All</button>
+            <button class="filter" data-filter="feature">Features</button>
+            <button class="filter" data-filter="bug">Incidents</button>
+            <button class="filter" data-filter="fix">Fixes</button>
+            <button class="filter" data-filter="performance">Performance</button>
+          </div>
+          <div class="timeline" id="timeline" aria-live="polite">
+            <div class="loading-state"><span></span><p>Reconstructing Git history…</p></div>
+          </div>
+        </aside>
+
+        <article class="detail-panel" id="detail-panel">
+          <div class="detail-empty">
+            <div class="portal"><span></span></div>
+            <p>Select an event to inspect its history.</p>
+          </div>
+        </article>
+      </section>
+    </main>
+    <section class="trace-overlay" id="trace-overlay" role="dialog" aria-modal="true" aria-labelledby="trace-title" hidden>
+      <div class="trace-backdrop" data-close-trace></div>
+      <div class="trace-window" id="trace-window"></div>
+    </section>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
