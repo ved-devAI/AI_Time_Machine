@@ -1,0 +1,55 @@
+{
+  "evaluation_version": 1,
+  "project_id": "orbitcart",
+  "bug_origin_trace": {
+    "origin_event_id": "event-8c19a37",
+    "trigger_event_id": "event-b24472a",
+    "roles": [
+      "pressure",
+      "origin",
+      "symptom",
+      "containment",
+      "resolution",
+      "verification"
+    ],
+    "event_ids": [
+      "event-4d1810a",
+      "event-8c19a37",
+      "event-b24472a",
+      "event-3b1b4d7",
+      "event-1509f33",
+      "event-a095037"
+    ],
+    "certainty": "inferred",
+    "minimum_confidence": 0.95
+  },
+  "ask_repo": {
+    "pricing-complexity": {
+      "certainty": "confirmed",
+      "minimum_confidence": 0.95,
+      "required_event_ids": [
+        "event-92dcbca",
+        "event-699d00b",
+        "event-1509f33"
+      ]
+    },
+    "stale-price-origin": {
+      "certainty": "inferred",
+      "minimum_confidence": 0.95,
+      "required_event_ids": [
+        "event-8c19a37",
+        "event-b24472a"
+      ]
+    },
+    "change-risk": {
+      "certainty": "inferred",
+      "minimum_confidence": 0.9,
+      "required_event_ids": [
+        "event-699d00b",
+        "event-3b1b4d7",
+        "event-1509f33",
+        "event-a095037"
+      ]
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "evaluation_version": 1,
+  "project_id": "orbitcart",
+  "evidence_sha256": "1b89f838c6bad7839f1ca28add8e852ae76d7677af37a12a42d3af2340d45133",
+  "score": 100.0,
+  "passed": 15,
+  "total": 15,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "trace uses validated GPT-5.6 Codex artifact",
+      "status": "pass"
+    },
+    {
+      "name": "trace identifies expected origin and trigger",
+      "status": "pass"
+    },
+    {
+      "name": "trace preserves six-stage causal order",
+      "status": "pass"
+    },
+    {
+      "name": "trace cites the expected event sequence",
+      "status": "pass"
+    },
+    {
+      "name": "trace certainty remains calibrated",
+      "status": "pass"
+    },
+    {
+      "name": "pricing-complexity uses calibrated certainty",
+      "status": "pass"
+    },
+    {
+      "name": "pricing-complexity cites required events",
+      "status": "pass"
+    },
+    {
+      "name": "stale-price-origin uses calibrated certainty",
+      "status": "pass"
+    },
+    {
+      "name": "stale-price-origin cites required events",
+      "status": "pass"
+    },
+    {
+      "name": "change-risk uses calibrated certainty",
+      "status": "pass"
+    },
+    {
+      "name": "change-risk cites required events",
+      "status": "pass"
+    },
+    {
+      "name": "validator rejects invented trace evidence",
+      "status": "pass"
+    },
+    {
+      "name": "validator rejects incomplete causal chain",
+      "status": "pass"
+    },
+    {
+      "name": "validator rejects invented answer event",
+      "status": "pass"
+    },
+    {
+      "name": "validator rejects cross-event file citation",
+      "status": "pass"
+    }
+  ]
+}

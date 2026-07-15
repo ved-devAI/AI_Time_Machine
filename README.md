@@ -19,13 +19,26 @@ python3 -m app.server
 
 Open <http://127.0.0.1:8765>.
 
-## Verify
+## Verify everything
+
+Run the complete zero-dependency judge check:
+
+```bash
+python3 scripts/verify.py
+```
+
+This regenerates OrbitCart, runs all application and repository tests, validates
+both Codex artifacts, produces a deterministic grounding scorecard, and checks
+the browser JavaScript and repository whitespace.
+
+Individual commands:
 
 ```bash
 python3 -m unittest discover -s tests -v
 PYTHONPATH=.data/orbitcart python3 -m unittest discover -s .data/orbitcart/tests -v
 python3 scripts/codex_artifact.py validate
 python3 scripts/ask_repo_artifact.py validate
+python3 scripts/evaluate_grounding.py
 ```
 
 ## How it works
@@ -65,5 +78,5 @@ artifacts are tied to the same OrbitCart evidence digest.
 `codex exec` reuses ChatGPT-managed Codex authentication. The app does not need
 an API key to replay the validated result.
 
-See [the analysis design](docs/ai-analysis.md) for grounding, validation, and
-fallback details.
+See [the analysis design](docs/ai-analysis.md) for grounding and fallback details
+and [the evaluation guide](docs/EVALUATION.md) for the scorecard.

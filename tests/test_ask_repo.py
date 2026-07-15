@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import copy
+import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -63,6 +65,25 @@ class AskRepoTests(unittest.TestCase):
             self.assertEqual(result["model"], "gpt-5.6-sol")
             self.assertGreaterEqual(len(result["evidence"]), 2)
             self.assertTrue(result["provenance"]["codex_session_id"])
+
+    def test_stale_artifact_uses_transparent_fallback(self) -> None:
+        envelope = json.loads(
+            (ROOT / "artifacts" / "orbitcart" / "ask-repo.codex.json").read_text(encoding="utf-8")
+        )
+        envelope["provenance"]["evidence_sha256"] = "stale"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "stale.json"
+            path.write_text(json.dumps(envelope), encoding="utf-8")
+            result = ask_repo(self.timeline, "pricing-complexity", path)
+        self.assertEqual(result["source"], "evidence-fallback")
+        self.assertEqual(result["delivery"], "fallback")
+
+    def test_malformed_artifact_uses_transparent_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "malformed.json"
+            path.write_text("{not-json", encoding="utf-8")
+            result = ask_repo(self.timeline, "stale-price-origin", path)
+        self.assertEqual(result["source"], "evidence-fallback")
 
 
 if __name__ == "__main__":

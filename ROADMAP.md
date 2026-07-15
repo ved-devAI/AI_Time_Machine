@@ -41,7 +41,7 @@ Target: July 17
 
 ### M3 — Evaluation and reliability
 
-Status: Next
+Status: Complete
 
 Target: July 18
 
@@ -52,7 +52,7 @@ Target: July 18
 
 ### M4 — Product polish and deployment
 
-Status: Pending
+Status: Next
 
 Target: July 19
 

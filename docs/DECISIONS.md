@@ -72,3 +72,18 @@ The stale-price answer is labeled inferred at 98% rather than confirmed at
 100%. Git proves which cache change preceded the incident and records its
 missing invalidation path, but it does not prove deployment timing or identify
 the first affected production checkout.
+
+## ADR-008 — Make grounding quality executable
+
+Status: Accepted — July 15, 2026
+
+Artifact validation proves that references exist, while a deterministic
+evaluation fixture proves that the flagship conclusions remain useful. The
+scorecard locks the expected bug origin, trigger, causal order, calibrated
+certainty, and required evidence events for all three repository questions. It
+also runs negative cases for invented evidence, incomplete chains, unknown
+events, and cross-event file citations.
+
+The judge workflow must score 100% and exit non-zero on any regression. Stale or
+malformed artifacts do not fail open: the runtime switches to a clearly labeled
+local evidence fallback and never presents it as GPT output.

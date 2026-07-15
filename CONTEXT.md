@@ -50,7 +50,14 @@ Working and verified:
   and cross-event file references are rejected by tests.
 - Ask the Repo records Codex session
   `019f6643-741f-7c31-a967-6efae9af01b1` and the current evidence digest.
-- Eighteen application tests and the OrbitCart regression test pass.
+- The deterministic grounding scorecard passes all 15 checks with a 100% score.
+- Stale, malformed, incomplete, invented-event, and cross-event citation cases
+  are rejected or routed to a transparently labeled fallback.
+- `python3 scripts/verify.py` regenerates the demo repository and runs the full
+  judge workflow without third-party packages.
+- Twenty-five application tests and the OrbitCart regression test pass.
+- Desktop flows are browser verified with no console errors. The 980px and
+  650px responsive contracts are automated in the test suite.
 - The local app runs at `http://127.0.0.1:8765`.
 
 ## Financial and hackathon constraint
@@ -66,13 +73,13 @@ runtime called GPT-5.6 unless a real live call occurred.
 
 ## Exact next task
 
-Implement **M3 — Evaluation and reliability**:
+Implement **M4 — Product polish and deployment** in a fresh Codex task:
 
-1. Add a compact grounding evaluation fixture for all three questions and the
-   Bug Origin Trace.
-2. Cover missing, stale, and deliberately invalid artifact cases.
-3. Verify desktop and mobile layouts.
-4. Make the setup path clean and repeatable for judges.
+1. Begin with a manual 390 × 844 responsive-browser pass; the current in-app
+   browser has a fixed desktop canvas, so this release check remains manual.
+2. Apply final visual and interaction polish without weakening evidence labels.
+3. Create a public runnable deployment and verify the clean judge setup path.
+4. Capture final screenshots and create the project thumbnail.
 
 ## Important implementation paths
 
@@ -83,6 +90,10 @@ Implement **M3 — Evaluation and reliability**:
 - `app/ask_repo.py` — fixed questions, answer validation, artifact replay, fallback
 - `scripts/codex_artifact.py` — evidence export and artifact validation CLI
 - `scripts/ask_repo_artifact.py` — Ask the Repo schema and artifact CLI
+- `scripts/evaluate_grounding.py` — deterministic grounding scorecard
+- `scripts/verify.py` — complete zero-dependency judge verification
+- `evaluations/orbitcart_grounding.json` — expected causal and citation evidence
+- `docs/EVALUATION.md` — reliability design and manual visual checklist
 - `artifacts/orbitcart/` — prompt, schema, evidence, and validated Codex result
 - `app/server.py` — local HTTP and JSON endpoints
 - `frontend/index.html` — application shell
@@ -104,18 +115,21 @@ python3 -m app.server
 Open <http://127.0.0.1:8765>.
 
 ```bash
+python3 scripts/verify.py
+# Or run the individual checks:
 python3 -m unittest discover -s tests -v
 PYTHONPATH=.data/orbitcart python3 -m unittest discover -s .data/orbitcart/tests -v
 python3 scripts/codex_artifact.py validate
 python3 scripts/ask_repo_artifact.py validate
+python3 scripts/evaluate_grounding.py
 node --check frontend/app.js
 git diff --check
 ```
 
 ## Known gaps
 
-- Automated grounding evaluation and invalid-artifact fixtures are pending.
-- Mobile browser verification is pending.
+- A real 390 × 844 visual pass is still required; automated CSS breakpoint
+  assertions pass, but this in-app browser exposes only a fixed 1280px canvas.
 - Deployment, thumbnail, demo video, and Devpost submission copy are pending.
 - The required `/feedback` Codex session ID still needs to be captured for the
   final submission.

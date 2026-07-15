@@ -127,6 +127,26 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(len(result["causal_chain"]), 6)
         self.assertTrue(result["provenance"]["codex_session_id"])
 
+    def test_stale_artifact_falls_back_without_claiming_codex(self) -> None:
+        envelope = json.loads(
+            (ROOT / "artifacts" / "orbitcart" / "bug-origin.codex.json").read_text(encoding="utf-8")
+        )
+        envelope["provenance"]["evidence_sha256"] = "stale"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "stale.json"
+            path.write_text(json.dumps(envelope), encoding="utf-8")
+            with patch.dict(os.environ, {"AI_TIME_MACHINE_ANALYSIS_MODE": "artifact"}, clear=True):
+                result = analyze_bug_origin(self.timeline, artifact_path=path)
+        self.assertEqual(result["source"], "evidence-fallback")
+        self.assertEqual(result["delivery"], "fallback")
+
+    def test_malformed_artifact_falls_back_safely(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "malformed.json"
+            path.write_text("{not-json", encoding="utf-8")
+            result = analyze_bug_origin(self.timeline, artifact_path=path)
+        self.assertEqual(result["source"], "evidence-fallback")
+
 
 if __name__ == "__main__":
     unittest.main()
