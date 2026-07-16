@@ -11,6 +11,14 @@ This repository contains a working OpenAI Build Week project slice: a generated
 OrbitCart Git repository, Git ingestion, an evidence timeline, validated
 GPT-5.6-in-Codex artifacts, Ask the Repo, and a visual Bug Origin Trace.
 
+## Planned: M4.5 Real Repo Mode
+
+The next milestone will add a local CLI for analyzing and serving an arbitrary
+Git repository, plus branch or commit-range context for files a developer is
+about to change. AI Time Machine will analyze its own history as proof that the
+engine is not hardcoded to OrbitCart. This is planned work, not functionality in
+the current release. See [the M4.5 implementation brief](docs/M4.5_REAL_REPO_MODE.md).
+
 ## Clean judge setup
 
 Requirements: Python 3.11+ and Git. No third-party packages are required for the

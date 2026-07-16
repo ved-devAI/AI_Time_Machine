@@ -61,9 +61,22 @@ Target: July 19
 - Repository cleanup and installation instructions
 - Project thumbnail and submission screenshots
 
-### M5 — Demo and submission
+### M4.5 — Real Repo Mode
 
 Status: Next
+
+Target: July 17
+
+- Local CLI for analyzing and serving an arbitrary Git repository
+- Generic evidence extraction when rationale is not recorded
+- Branch or commit-range change context
+- Self-analysis using the AI Time Machine repository
+- Tests for invalid repositories, empty history, and range errors
+- Optional validated Codex question artifact only after the core flow passes
+
+### M5 — Demo and submission
+
+Status: Pending
 
 Target: July 20
 

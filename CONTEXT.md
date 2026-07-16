@@ -85,14 +85,18 @@ runtime called GPT-5.6 unless a real live call occurred.
 
 ## Exact next task
 
-Implement **M5 — Demo and submission** in a fresh Codex task:
+Implement **M4.5 — Real Repo Mode** in a fresh Codex task, following
+`docs/M4.5_REAL_REPO_MODE.md`:
 
-1. Record a public YouTube demo under three minutes using the deployed judge URL.
-2. Explain GPT-5.6 Sol in Codex honestly as build-time analysis, implementation,
-   review, and evaluation; do not imply a runtime model call.
-3. Capture the required `/feedback` Codex session ID.
-4. Finalize the Devpost description, testing instructions, and submission links.
-5. Verify the repository, deployment, video, and all submission URLs.
+1. Add a local CLI that analyzes and serves an arbitrary Git repository.
+2. Generalize ingestion for repositories without structured `Summary:`, `Why:`,
+   and `Risk:` commit bodies; missing rationale must remain `not recorded`.
+3. Add branch or commit-range context for files changed between `base` and
+   `head`.
+4. Dogfood the workflow on the AI Time Machine repository itself.
+5. Keep OrbitCart, the public demo, and the complete judge verification green.
+6. Only after the required workflow passes, consider the optional validated
+   Codex question-artifact command described in the M4.5 brief.
 
 ## Important implementation paths
 
@@ -107,6 +111,7 @@ Implement **M5 — Demo and submission** in a fresh Codex task:
 - `scripts/verify.py` — complete zero-dependency judge verification
 - `evaluations/orbitcart_grounding.json` — expected causal and citation evidence
 - `docs/EVALUATION.md` — reliability design and manual visual checklist
+- `docs/M4.5_REAL_REPO_MODE.md` — required scope, proof, tests, and non-goals
 - `artifacts/orbitcart/` — prompt, schema, evidence, and validated Codex result
 - `app/server.py` — local HTTP and JSON endpoints
 - `frontend/index.html` — application shell
@@ -141,6 +146,7 @@ git diff --check
 
 ## Known gaps
 
+- Real Repo Mode is specified but not implemented.
 - The public YouTube demo and Devpost submission copy are pending.
 - The required `/feedback` Codex session ID still needs to be captured for the
   final submission.

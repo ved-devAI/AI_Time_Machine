@@ -40,3 +40,14 @@ Every claim must be attached to observable repository evidence. The interface
 must distinguish confirmed facts from inferences. Missing evidence must never
 be silently converted into certainty.
 
+## Planned M4.5 developer proof
+
+Real Repo Mode will add a local-only workflow for arbitrary Git repositories.
+It will reuse the evidence and certainty rules above, keep OrbitCart as the
+flagship demo, and prove genericity by analyzing AI Time Machine's own history.
+
+Required scope is local repository selection, generic timeline ingestion,
+browser serving, and branch or commit-range context. An opt-in
+ChatGPT-authenticated Codex artifact may be added only after the evidence-only
+workflow passes. GitHub OAuth, hosted private repositories, editor extensions,
+team features, and autonomous modification remain deferred.

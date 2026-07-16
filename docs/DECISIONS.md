@@ -102,3 +102,20 @@ ingestion or a live GPT-5.6 call. The public release is hosted at
 `ai-time-machine-demo.vedheshvit.chatgpt.site`. This preserves an API-free,
 zero-dependency judge experience while keeping every causal claim tied to real
 event IDs, commits, and files.
+
+## ADR-010 — Prove genericity with a local-first Real Repo Mode
+
+Status: Proposed — July 16, 2026
+
+M4.5 will add a local CLI that analyzes and serves an arbitrary Git repository,
+plus branch or commit-range context for files a developer is about to change.
+The proof case will be AI Time Machine analyzing its own history. OrbitCart
+remains the deterministic flagship narrative and must not be weakened or
+replaced.
+
+The required workflow uses only Python and Git. Generic ingestion must not
+assume structured rationale in commit bodies; absent reasoning is labeled `not
+recorded`. An opt-in ChatGPT-authenticated Codex artifact is a stretch goal and
+must retain strict event, commit, file, certainty, digest, and provenance
+validation. GitHub OAuth, hosted repository access, editor integrations, and
+autonomous modification remain outside the hackathon scope.
