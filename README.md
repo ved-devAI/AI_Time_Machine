@@ -3,7 +3,7 @@
 AI Time Machine turns real Git history into an interactive, evidence-backed
 timeline explaining why a codebase evolved.
 
-**Public demo:** deployment URL is recorded here after the first production release.
+**Public demo:** <https://ai-time-machine-demo.vedheshvit.chatgpt.site>
 
 ![AI Time Machine project thumbnail](frontend/project-thumbnail.png)
 

@@ -52,7 +52,7 @@ Target: July 18
 
 ### M4 — Product polish and deployment
 
-Status: Next
+Status: Complete
 
 Target: July 19
 
@@ -63,7 +63,7 @@ Target: July 19
 
 ### M5 — Demo and submission
 
-Status: Pending
+Status: Next
 
 Target: July 20
 

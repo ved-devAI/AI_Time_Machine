@@ -98,6 +98,7 @@ deployment, validates the committed GPT-5.6 Sol artifacts against the resulting
 evidence digest, and publishes only the validated JSON payloads with the frontend.
 
 The hosted UI labels this mode `Git snapshot verified`. It does not claim live Git
-ingestion or a live GPT-5.6 call. This preserves an API-free, zero-dependency judge
-experience while keeping every causal claim tied to real event IDs, commits, and
-files.
+ingestion or a live GPT-5.6 call. The public release is hosted at
+`ai-time-machine-demo.vedheshvit.chatgpt.site`. This preserves an API-free,
+zero-dependency judge experience while keeping every causal claim tied to real
+event IDs, commits, and files.

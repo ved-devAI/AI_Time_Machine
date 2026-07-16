@@ -1,6 +1,6 @@
 # AI Time Machine — Current Handoff
 
-Last refreshed: July 15, 2026 (Asia/Kolkata)
+Last refreshed: July 16, 2026 (Asia/Kolkata)
 
 ## Start here
 
@@ -14,6 +14,8 @@ Current branch: `main`, tracking `origin/main`
 Remote: `git@github.com:ved-devAI/AI_Time_Machine.git`
 
 Repository: <https://github.com/ved-devAI/AI_Time_Machine>
+
+Public demo: <https://ai-time-machine-demo.vedheshvit.chatgpt.site>
 
 The repository uses a local author identity and a repository-specific SSH key
 for `ved-devAI`; it does not depend on the user's other GitHub accounts.
@@ -55,9 +57,19 @@ Working and verified:
   are rejected or routed to a transparently labeled fallback.
 - `python3 scripts/verify.py` regenerates the demo repository and runs the full
   judge workflow without third-party packages.
-- Twenty-five application tests and the OrbitCart regression test pass.
 - Desktop flows are browser verified with no console errors. The 980px and
   650px responsive contracts are automated in the test suite.
+- The required 390 × 844 release pass is complete. The mobile Bug Origin Trace
+  uses a vertical six-stage chain with no page or dialog horizontal overflow.
+- Dialogs reopen at the top, return keyboard focus to their launcher, and expose
+  visible focus states.
+- The public deployment serves a validated, API-free Git evidence snapshot and
+  clearly labels it `Git snapshot verified`.
+- The production timeline, stale-price answer, citation navigation, and six-stage
+  Bug Origin Trace are browser verified with no console errors.
+- Final desktop, trace, and mobile screenshots plus the project thumbnail are
+  committed under `docs/screenshots/` and `frontend/project-thumbnail.png`.
+- Twenty-nine application tests and the OrbitCart regression test pass.
 - The local app runs at `http://127.0.0.1:8765`.
 
 ## Financial and hackathon constraint
@@ -73,13 +85,14 @@ runtime called GPT-5.6 unless a real live call occurred.
 
 ## Exact next task
 
-Implement **M4 — Product polish and deployment** in a fresh Codex task:
+Implement **M5 — Demo and submission** in a fresh Codex task:
 
-1. Begin with a manual 390 × 844 responsive-browser pass; the current in-app
-   browser has a fixed desktop canvas, so this release check remains manual.
-2. Apply final visual and interaction polish without weakening evidence labels.
-3. Create a public runnable deployment and verify the clean judge setup path.
-4. Capture final screenshots and create the project thumbnail.
+1. Record a public YouTube demo under three minutes using the deployed judge URL.
+2. Explain GPT-5.6 Sol in Codex honestly as build-time analysis, implementation,
+   review, and evaluation; do not imply a runtime model call.
+3. Capture the required `/feedback` Codex session ID.
+4. Finalize the Devpost description, testing instructions, and submission links.
+5. Verify the repository, deployment, video, and all submission URLs.
 
 ## Important implementation paths
 
@@ -128,9 +141,7 @@ git diff --check
 
 ## Known gaps
 
-- A real 390 × 844 visual pass is still required; automated CSS breakpoint
-  assertions pass, but this in-app browser exposes only a fixed 1280px canvas.
-- Deployment, thumbnail, demo video, and Devpost submission copy are pending.
+- The public YouTube demo and Devpost submission copy are pending.
 - The required `/feedback` Codex session ID still needs to be captured for the
   final submission.
 
