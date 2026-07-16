@@ -3,7 +3,7 @@
 AI Time Machine turns real Git history into an interactive, evidence-backed
 timeline explaining why a codebase evolved.
 
-**Public demo:** <https://ved-devai.github.io/AI_Time_Machine/>
+**Public demo:** deployment URL is recorded here after the first production release.
 
 ![AI Time Machine project thumbnail](frontend/project-thumbnail.png)
 
@@ -100,9 +100,9 @@ python3 scripts/create_orbitcart.py
 python3 scripts/build_public_demo.py
 ```
 
-The build writes the deployable site to `dist/`. Pushes to `main` run the full
-judge verification, rebuild the evidence snapshot, and deploy it through GitHub
-Pages. No API key or paid runtime call is required.
+The build writes a static client and a minimal host worker to `dist/`. Pushes to
+`main` run the full judge verification; production releases package the same
+validated build for the public host. No API key or paid runtime call is required.
 
 ## Release screenshots
 

@@ -19,7 +19,8 @@ from app.git_ingest import read_timeline
 FRONTEND = ROOT / "frontend"
 ORBITCART = ROOT / ".data" / "orbitcart"
 DIST = ROOT / "dist"
-DATA = DIST / "demo-data"
+CLIENT = DIST / "client"
+DATA = CLIENT / "demo-data"
 BUG_ARTIFACT = ROOT / "artifacts" / "orbitcart" / "bug-origin.codex.json"
 ASK_ARTIFACT = ROOT / "artifacts" / "orbitcart" / "ask-repo.codex.json"
 
@@ -34,7 +35,7 @@ def main() -> None:
 
     if DIST.exists():
         shutil.rmtree(DIST)
-    shutil.copytree(FRONTEND, DIST)
+    shutil.copytree(FRONTEND, CLIENT)
     DATA.mkdir()
 
     timeline = read_timeline(ORBITCART)
@@ -45,11 +46,25 @@ def main() -> None:
         answer = ask_repo(timeline, question["id"], ASK_ARTIFACT)
         write_json(DATA / f"ask-{question['id']}.json", answer)
 
-    (DIST / "runtime-config.js").write_text(
+    (CLIENT / "runtime-config.js").write_text(
         'window.AI_TIME_MACHINE_RUNTIME = Object.freeze({ mode: "snapshot" });\n',
         encoding="utf-8",
     )
-    (DIST / ".nojekyll").write_text("", encoding="utf-8")
+    server = DIST / "server"
+    server.mkdir()
+    (server / "index.js").write_text(
+        """const worker = {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === \"/\") url.pathname = \"/index.html\";
+    return env.ASSETS.fetch(new Request(url, request));
+  },
+};
+
+export default worker;
+""",
+        encoding="utf-8",
+    )
     print(f"Built verified public demo in {DIST}")
 
 

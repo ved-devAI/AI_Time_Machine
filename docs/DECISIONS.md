@@ -93,7 +93,7 @@ local evidence fallback and never presents it as GPT output.
 Status: Accepted — July 16, 2026
 
 The local application continues to ingest the generated OrbitCart Git repository
-at request time. The public GitHub Pages build runs that same ingestion during
+at request time. The public hosting build runs that same ingestion during
 deployment, validates the committed GPT-5.6 Sol artifacts against the resulting
 evidence digest, and publishes only the validated JSON payloads with the frontend.
 
