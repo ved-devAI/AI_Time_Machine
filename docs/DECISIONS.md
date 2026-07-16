@@ -87,3 +87,17 @@ events, and cross-event file citations.
 The judge workflow must score 100% and exit non-zero on any regression. Stale or
 malformed artifacts do not fail open: the runtime switches to a clearly labeled
 local evidence fallback and never presents it as GPT output.
+
+## ADR-009 — Deploy a validated evidence snapshot to static hosting
+
+Status: Accepted — July 16, 2026
+
+The local application continues to ingest the generated OrbitCart Git repository
+at request time. The public GitHub Pages build runs that same ingestion during
+deployment, validates the committed GPT-5.6 Sol artifacts against the resulting
+evidence digest, and publishes only the validated JSON payloads with the frontend.
+
+The hosted UI labels this mode `Git snapshot verified`. It does not claim live Git
+ingestion or a live GPT-5.6 call. This preserves an API-free, zero-dependency judge
+experience while keeping every causal claim tied to real event IDs, commits, and
+files.

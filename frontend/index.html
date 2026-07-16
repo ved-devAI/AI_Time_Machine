@@ -4,9 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Travel through the history of a codebase and uncover why it evolved." />
+    <meta property="og:title" content="AI Time Machine" />
+    <meta property="og:description" content="Evidence-backed codebase history intelligence." />
+    <meta property="og:image" content="https://ved-devai.github.io/AI_Time_Machine/project-thumbnail.png" />
+    <meta name="twitter:card" content="summary_large_image" />
     <title>AI Time Machine</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -18,8 +22,8 @@
           <span><strong>AI Time Machine</strong><small>CODEBASE HISTORY INTELLIGENCE</small></span>
         </a>
         <div class="topbar-actions">
-          <span class="live-pill"><i></i> Evidence live</span>
-          <button class="icon-button" aria-label="Repository settings">⌘</button>
+          <span class="live-pill"><i></i> <span id="runtime-label">Git evidence verified</span></span>
+          <a class="source-link" href="https://github.com/ved-devAI/AI_Time_Machine" target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
         </div>
       </header>
 
@@ -63,11 +67,11 @@
             <span class="count" id="event-count">0 EVENTS</span>
           </div>
           <div class="filters" id="filters" aria-label="Filter events">
-            <button class="filter active" data-filter="all">All</button>
-            <button class="filter" data-filter="feature">Features</button>
-            <button class="filter" data-filter="bug">Incidents</button>
-            <button class="filter" data-filter="fix">Fixes</button>
-            <button class="filter" data-filter="performance">Performance</button>
+            <button class="filter active" data-filter="all" aria-pressed="true">All</button>
+            <button class="filter" data-filter="feature" aria-pressed="false">Features</button>
+            <button class="filter" data-filter="bug" aria-pressed="false">Incidents</button>
+            <button class="filter" data-filter="fix" aria-pressed="false">Fixes</button>
+            <button class="filter" data-filter="performance" aria-pressed="false">Performance</button>
           </div>
           <div class="timeline" id="timeline" aria-live="polite">
             <div class="loading-state"><span></span><p>Reconstructing Git history…</p></div>
@@ -90,6 +94,7 @@
       <div class="ask-backdrop" data-close-ask></div>
       <div class="ask-answer-window" id="ask-answer-window"></div>
     </section>
-    <script src="/app.js" defer></script>
+    <script src="./runtime-config.js"></script>
+    <script src="./app.js" defer></script>
   </body>
 </html>

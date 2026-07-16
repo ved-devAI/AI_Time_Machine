@@ -3,21 +3,33 @@
 AI Time Machine turns real Git history into an interactive, evidence-backed
 timeline explaining why a codebase evolved.
 
+**Public demo:** <https://ved-devai.github.io/AI_Time_Machine/>
+
+![AI Time Machine project thumbnail](frontend/project-thumbnail.png)
+
 This repository contains a working OpenAI Build Week project slice: a generated
 OrbitCart Git repository, Git ingestion, an evidence timeline, validated
 GPT-5.6-in-Codex artifacts, Ask the Repo, and a visual Bug Origin Trace.
 
-## Run locally
+## Clean judge setup
 
 Requirements: Python 3.11+ and Git. No third-party packages are required for the
 current slice.
 
 ```bash
+git clone https://github.com/ved-devAI/AI_Time_Machine.git
+cd AI_Time_Machine
 python3 scripts/create_orbitcart.py
 python3 -m app.server
 ```
 
 Open <http://127.0.0.1:8765>.
+
+The local app reads the generated OrbitCart Git repository at request time. The
+public demo is an API-free snapshot produced from that same repository during
+deployment. Its timeline and Codex results are validated before publication,
+and the UI labels hosted evidence as a verified Git snapshot rather than a live
+model call.
 
 ## Verify everything
 
@@ -80,3 +92,20 @@ an API key to replay the validated result.
 
 See [the analysis design](docs/ai-analysis.md) for grounding and fallback details
 and [the evaluation guide](docs/EVALUATION.md) for the scorecard.
+
+## Public deployment
+
+```bash
+python3 scripts/create_orbitcart.py
+python3 scripts/build_public_demo.py
+```
+
+The build writes the deployable site to `dist/`. Pushes to `main` run the full
+judge verification, rebuild the evidence snapshot, and deploy it through GitHub
+Pages. No API key or paid runtime call is required.
+
+## Release screenshots
+
+- [Desktop product overview](docs/screenshots/ai-time-machine-desktop.png)
+- [Bug Origin Trace](docs/screenshots/ai-time-machine-bug-origin-trace.png)
+- [390 × 844 mobile trace](docs/screenshots/ai-time-machine-mobile-390x844.png)

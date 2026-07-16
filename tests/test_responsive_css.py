@@ -35,6 +35,8 @@ class ResponsiveCssTests(unittest.TestCase):
         self.assertIn(".evidence-list, .related-list { grid-template-columns: 1fr;", mobile)
         self.assertIn(".repo-card { min-width: 0; }", mobile)
         self.assertIn(".trace-window { width: 100%;", mobile)
+        self.assertIn(".trace-map { grid-template-columns: 1fr;", mobile)
+        self.assertIn("overflow: visible;", mobile)
 
 
 if __name__ == "__main__":

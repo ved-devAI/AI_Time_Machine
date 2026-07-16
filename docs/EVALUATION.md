@@ -28,7 +28,8 @@ questions, and citation navigation. Automated CSS tests assert that the actual
 980px and 650px media blocks stack the workspace, prompt list, evidence cards,
 and trace content without fixed-width repository cards.
 
-Before recording the demo, perform one manual narrow-viewport pass at 390 × 844
-in browser responsive mode. Confirm the three prompt buttons and evidence cards
-stack to one column and that both dialogs scroll vertically without horizontal
-overflow.
+The July 16 release pass was completed at a real 390 × 844 browser viewport.
+The three prompt buttons and evidence cards stack to one column, both dialogs
+scroll vertically without page-level horizontal overflow, and the six-stage Bug
+Origin Trace becomes a vertical causal chain. The same pass confirmed that
+dialogs reopen at the top and return keyboard focus to their launch control.

@@ -19,6 +19,7 @@ COMMANDS = [
     ),
     ("Validate Bug Origin artifact", [sys.executable, "scripts/codex_artifact.py", "validate"]),
     ("Validate Ask the Repo artifact", [sys.executable, "scripts/ask_repo_artifact.py", "validate"]),
+    ("Build verified public demo", [sys.executable, "scripts/build_public_demo.py"]),
     (
         "Run grounding scorecard",
         [

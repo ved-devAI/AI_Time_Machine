@@ -1,7 +1,29 @@
-const state = { events: [], selectedId: null, filter: "all", investigation: null, answers: {} };
+const runtime = window.AI_TIME_MACHINE_RUNTIME || { mode: "local" };
+const state = {
+  events: [],
+  selectedId: null,
+  filter: "all",
+  investigation: null,
+  answers: {},
+  traceReturnFocus: null,
+  askReturnFocus: null,
+};
 
 const timeline = document.querySelector("#timeline");
 const detail = document.querySelector("#detail-panel");
+
+document.querySelector("#runtime-label").textContent = runtime.mode === "snapshot"
+  ? "Git snapshot verified"
+  : "Git evidence verified";
+
+async function requestJson(apiPath, snapshotPath, options = undefined) {
+  const response = runtime.mode === "snapshot"
+    ? await fetch(snapshotPath)
+    : await fetch(apiPath, options);
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+  return payload;
+}
 
 const icons = {
   feature: "✦",
@@ -54,7 +76,7 @@ function renderTimeline() {
   timeline.innerHTML = events
     .map(
       (event) => `
-        <button class="event-card ${event.type} ${event.id === state.selectedId ? "selected" : ""}" data-event-id="${escapeHtml(event.id)}">
+        <button class="event-card ${event.type} ${event.id === state.selectedId ? "selected" : ""}" data-event-id="${escapeHtml(event.id)}" aria-pressed="${event.id === state.selectedId}">
           <span class="event-node">${icons[event.type] || "•"}</span>
           <span class="event-content">
             <span class="event-meta"><span class="type-badge">${labels[event.type] || "Change"}</span><time>${formatDate(event.occurred_at)}</time></span>
@@ -81,7 +103,11 @@ function selectEvent(id) {
 
 function showAllEvents() {
   state.filter = "all";
-  document.querySelectorAll(".filter").forEach((filter) => filter.classList.toggle("active", filter.dataset.filter === "all"));
+  document.querySelectorAll(".filter").forEach((filter) => {
+    const isAll = filter.dataset.filter === "all";
+    filter.classList.toggle("active", isAll);
+    filter.setAttribute("aria-pressed", String(isAll));
+  });
 }
 
 function renderDetail(event) {
@@ -133,11 +159,13 @@ function renderDetail(event) {
 function closeTrace() {
   document.querySelector("#trace-overlay").hidden = true;
   document.body.classList.remove("trace-open");
+  state.traceReturnFocus?.focus();
 }
 
 function closeAsk() {
   document.querySelector("#ask-overlay").hidden = true;
   document.body.classList.remove("ask-open");
+  state.askReturnFocus?.focus();
 }
 
 function answerSource(answer) {
@@ -186,22 +214,26 @@ async function askRepo(questionId) {
   const overlay = document.querySelector("#ask-overlay");
   const window = document.querySelector("#ask-answer-window");
   overlay.hidden = false;
+  state.askReturnFocus = document.activeElement;
   document.body.classList.add("ask-open");
   window.innerHTML = `<button class="trace-close loading-close" data-close-ask aria-label="Close answer">×</button><div class="ask-loading"><div class="ask-loader">?</div><p class="eyebrow">READING REPOSITORY EVIDENCE</p><h2 id="ask-answer-title">Following commits, files, and recorded risks…</h2></div>`;
   window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
   try {
     if (!state.answers[questionId]) {
-      const response = await fetch("/api/projects/orbitcart/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question_id: questionId }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || `Answer failed (${response.status})`);
-      state.answers[questionId] = payload;
+      state.answers[questionId] = await requestJson(
+        "/api/projects/orbitcart/ask",
+        `./demo-data/ask-${questionId}.json`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question_id: questionId }),
+        },
+      );
     }
     window.innerHTML = renderAskAnswer(state.answers[questionId]);
+    window.scrollTop = 0;
     window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
+    window.querySelector("[data-close-ask]")?.focus();
     window.querySelectorAll("[data-ask-event]").forEach((button) => {
       button.addEventListener("click", () => {
         closeAsk();
@@ -275,6 +307,7 @@ async function openTrace() {
   const overlay = document.querySelector("#trace-overlay");
   const window = document.querySelector("#trace-window");
   overlay.hidden = false;
+  state.traceReturnFocus = document.activeElement;
   document.body.classList.add("trace-open");
   window.innerHTML = `
     <button class="trace-close loading-close" data-close-trace aria-label="Close investigation">×</button>
@@ -282,12 +315,16 @@ async function openTrace() {
   window.querySelectorAll("[data-close-trace]").forEach((button) => button.addEventListener("click", closeTrace));
   try {
     if (!state.investigation) {
-      const response = await fetch("/api/projects/orbitcart/investigations/bug-origin", { method: "POST" });
-      if (!response.ok) throw new Error(`Investigation failed (${response.status})`);
-      state.investigation = await response.json();
+      state.investigation = await requestJson(
+        "/api/projects/orbitcart/investigations/bug-origin",
+        "./demo-data/investigation.json",
+        { method: "POST" },
+      );
     }
     window.innerHTML = renderInvestigation(state.investigation);
+    window.scrollTop = 0;
     window.querySelectorAll("[data-close-trace]").forEach((button) => button.addEventListener("click", closeTrace));
+    window.querySelector("[data-close-trace]")?.focus();
     window.querySelectorAll("[data-trace-event]").forEach((button) => {
       button.addEventListener("click", () => {
         closeTrace();
@@ -303,9 +340,10 @@ async function openTrace() {
 
 async function loadTimeline() {
   try {
-    const response = await fetch("/api/projects/orbitcart/timeline");
-    if (!response.ok) throw new Error(`Timeline request failed (${response.status})`);
-    const data = await response.json();
+    const data = await requestJson(
+      "/api/projects/orbitcart/timeline",
+      "./demo-data/timeline.json",
+    );
     state.events = data.events;
     document.querySelector("#project-name").textContent = data.project.name;
     document.querySelector("#project-description").textContent = data.project.description;
@@ -325,7 +363,10 @@ async function loadTimeline() {
 document.querySelectorAll(".filter").forEach((button) => {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter;
-    document.querySelectorAll(".filter").forEach((item) => item.classList.toggle("active", item === button));
+    document.querySelectorAll(".filter").forEach((item) => {
+      item.classList.toggle("active", item === button);
+      item.setAttribute("aria-pressed", String(item === button));
+    });
     renderTimeline();
   });
 });
