@@ -10,9 +10,11 @@ Each timeline event uses the following stable shape:
   "occurred_at": "ISO-8601 timestamp",
   "author": "commit author",
   "type": "feature | bug | fix | refactor | performance | rollback | test | change",
+  "type_certainty": "confirmed | inferred",
   "title": "human-readable commit title",
   "summary": "what changed",
   "why": "why it mattered",
+  "rationale_certainty": "confirmed | missing-evidence",
   "certainty": "confirmed | inferred | missing-evidence",
   "confidence": 0.0,
   "files": [{"path": "src/file.py", "status": "M"}],
@@ -22,7 +24,9 @@ Each timeline event uses the following stable shape:
 }
 ```
 
-During the first vertical slice, summaries and reasons are extracted from the
-commit evidence itself. GPT-5.6 enrichment will use this same contract and add
-inferred causal explanations without replacing the underlying evidence.
-
+Summaries and reasons are extracted from commit evidence itself. In generic
+repositories, a conventional-commit prefix may infer the event type but does not
+turn that classification into a confirmed fact. Missing `Why:` and `Risk:`
+fields use the literal value `not recorded`. GPT-5.6 enrichment uses this same
+contract and may add inferred causal explanations without replacing the
+underlying evidence.

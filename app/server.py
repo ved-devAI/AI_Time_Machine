@@ -5,14 +5,18 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import threading
+import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from app.analysis import AnalysisError, analyze_bug_origin
 from app.ask_repo import QUESTIONS, ask_repo
-from app.git_ingest import read_timeline
+from app.git_ingest import GitRepositoryError, read_change_context, read_timeline
+from app.repo_questions import QUESTIONS as REPO_QUESTIONS
+from app.repo_questions import answer_question
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +44,11 @@ def load_local_env(path: Path) -> None:
 
 
 class Handler(BaseHTTPRequestHandler):
+    repository = ORBITCART
+    revision = "HEAD"
+    orbitcart_features = True
+    default_base = "HEAD~1"
+
     def _json(self, payload: object, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
@@ -76,20 +85,58 @@ class Handler(BaseHTTPRequestHandler):
         return payload
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         if path == "/api/health":
             self._json({"status": "ok", "service": "ai-time-machine"})
             return
-        if path == "/api/projects/orbitcart/timeline":
-            if not ORBITCART.exists():
+        if path in {"/api/timeline", "/api/projects/orbitcart/timeline"}:
+            if not self.repository.exists():
                 self._json(
                     {"error": "OrbitCart has not been generated. Run scripts/create_orbitcart.py."},
                     HTTPStatus.SERVICE_UNAVAILABLE,
                 )
                 return
-            self._json(read_timeline(ORBITCART))
+            self._json(read_timeline(self.repository, self.revision))
+            return
+        if path == "/api/context":
+            if self.orbitcart_features:
+                self._json(
+                    {"error": "Branch review is available in Developer Workspace mode."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            query = parse_qs(parsed.query, keep_blank_values=True)
+            base = query.get("base", [self.default_base])[0]
+            head = query.get("head", [self.revision])[0]
+            try:
+                self._json(read_change_context(self.repository, base, head))
+            except GitRepositoryError as exc:
+                self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/api/questions":
+            if self.orbitcart_features:
+                self._json(
+                    {"error": "Adaptive questions are available in Developer Workspace mode."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            self._json(
+                {
+                    "questions": REPO_QUESTIONS,
+                    "source": "local-evidence-engine",
+                    "base": self.default_base,
+                    "head": self.revision,
+                }
+            )
             return
         if path == "/api/projects/orbitcart/questions":
+            if not self.orbitcart_features:
+                self._json(
+                    {"error": "Ask the Repo is available only for the validated OrbitCart demo."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
             self._json({"questions": QUESTIONS})
             return
         if path == "/":
@@ -104,17 +151,29 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         path = urlparse(self.path).path
         if path == "/api/projects/orbitcart/investigations/bug-origin":
-            if not ORBITCART.exists():
+            if not self.orbitcart_features:
+                self._json(
+                    {"error": "Bug Origin Trace is available only for the validated OrbitCart demo."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            if not self.repository.exists():
                 self._json(
                     {"error": "OrbitCart has not been generated. Run scripts/create_orbitcart.py."},
                     HTTPStatus.SERVICE_UNAVAILABLE,
                 )
                 return
-            timeline = read_timeline(ORBITCART)
+            timeline = read_timeline(self.repository, self.revision)
             self._json(analyze_bug_origin(timeline, ANALYSIS_CACHE, CODEX_ARTIFACT))
             return
         if path == "/api/projects/orbitcart/ask":
-            if not ORBITCART.exists():
+            if not self.orbitcart_features:
+                self._json(
+                    {"error": "Ask the Repo is available only for the validated OrbitCart demo."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            if not self.repository.exists():
                 self._json(
                     {"error": "OrbitCart has not been generated. Run scripts/create_orbitcart.py."},
                     HTTPStatus.SERVICE_UNAVAILABLE,
@@ -125,8 +184,34 @@ class Handler(BaseHTTPRequestHandler):
                 question_id = payload.get("question_id")
                 if not isinstance(question_id, str):
                     raise ValueError("question_id must be a string.")
-                self._json(ask_repo(read_timeline(ORBITCART), question_id, ASK_REPO_ARTIFACT))
+                self._json(
+                    ask_repo(
+                        read_timeline(self.repository, self.revision),
+                        question_id,
+                        ASK_REPO_ARTIFACT,
+                    )
+                )
             except (ValueError, AnalysisError) as exc:
+                self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/api/questions/answer":
+            if self.orbitcart_features:
+                self._json(
+                    {"error": "Adaptive questions are available in Developer Workspace mode."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            try:
+                payload = self._request_json()
+                question_id = payload.get("question_id")
+                base = payload.get("base", self.default_base)
+                head = payload.get("head", self.revision)
+                if not all(isinstance(item, str) for item in (question_id, base, head)):
+                    raise ValueError("question_id, base, and head must be strings.")
+                timeline = read_timeline(self.repository, self.revision)
+                context = read_change_context(self.repository, base, head)
+                self._json(answer_question(timeline, question_id, context))
+            except (ValueError, AnalysisError, GitRepositoryError) as exc:
                 self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         self._json({"error": "Unknown API endpoint."}, HTTPStatus.NOT_FOUND)
@@ -135,17 +220,41 @@ class Handler(BaseHTTPRequestHandler):
         print(f"[ai-time-machine] {format % args}")
 
 
-def main() -> None:
-    load_local_env(ROOT / ".env")
-    host, port = "127.0.0.1", 8765
-    server = ThreadingHTTPServer((host, port), Handler)
+def run_server(
+    repository: Path = ORBITCART,
+    revision: str = "HEAD",
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    open_browser: bool = False,
+) -> None:
+    timeline = read_timeline(repository, revision)
+    selected_repository = Path(timeline["project"]["repository_path"])
+    handler = type(
+        "ConfiguredHandler",
+        (Handler,),
+        {
+            "repository": selected_repository,
+            "revision": revision,
+            "orbitcart_features": timeline["project"]["mode"] == "orbitcart",
+            "default_base": timeline["project"]["suggested_base"],
+        },
+    )
+    server = ThreadingHTTPServer((host, port), handler)
     print(f"AI Time Machine running at http://{host}:{port}")
+    print(f"Repository: {selected_repository} ({timeline['project']['branch']})")
+    if open_browser:
+        threading.Timer(0.25, webbrowser.open, args=(f"http://{host}:{port}",)).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopping AI Time Machine")
     finally:
         server.server_close()
+
+
+def main() -> None:
+    load_local_env(ROOT / ".env")
+    run_server()
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ Every claim must be attached to observable repository evidence. The interface
 must distinguish confirmed facts from inferences. Missing evidence must never
 be silently converted into certainty.
 
-## Planned M4.5 developer proof
+## Real Repo Mode developer proof
 
 Real Repo Mode will add a local-only workflow for arbitrary Git repositories.
 It will reuse the evidence and certainty rules above, keep OrbitCart as the
@@ -51,3 +51,22 @@ browser serving, and branch or commit-range context. An opt-in
 ChatGPT-authenticated Codex artifact may be added only after the evidence-only
 workflow passes. GitHub OAuth, hosted private repositories, editor extensions,
 team features, and autonomous modification remain deferred.
+
+## Developer workspace and planned opt-in integrations
+
+M4.6 exposes the existing branch context engine in the browser, makes local
+startup one command, and adds adaptive deterministic questions for ordinary
+repositories. These answers remain evidence-engine output and are never labeled
+as GPT output. Browser requests may select Git revisions for review but cannot
+change the repository path fixed at server startup.
+
+Optional custom AI analysis is BYOK and local-server-only. A user may configure
+their own Platform API key outside the browser process, but the public client
+must never receive, persist, or transmit that key. The zero-key workflow remains
+complete and is always the default.
+
+Remote Git authentication remains separate from model authentication. The first
+integration should reuse a developer's existing local Git or GitHub CLI login.
+A future hosted connection should use a fine-grained, read-only GitHub App for
+selected repositories rather than broad OAuth access. See
+`docs/UPCOMING_DEVELOPER_MILESTONES.md`.

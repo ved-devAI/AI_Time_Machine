@@ -29,12 +29,12 @@
 
       <section class="hero-strip">
         <div>
-          <p class="eyebrow">REPOSITORY / <span>ORBITCART</span></p>
+          <p class="eyebrow">REPOSITORY / <span id="repository-label">ORBITCART</span></p>
           <h1>Understand <em>why</em> your code evolved.</h1>
           <p>Travel through engineering decisions, incidents, and fixes—all grounded in Git evidence.</p>
         </div>
         <div class="repo-card">
-          <div class="repo-icon">OC</div>
+          <div class="repo-icon" id="repo-icon">OC</div>
           <div><strong id="project-name">Loading history…</strong><span id="project-description">Reading repository evidence</span></div>
           <span class="branch"><i>⑂</i> <span id="branch-name">main</span></span>
         </div>
@@ -47,16 +47,37 @@
         <div><span>EVIDENCE COVERAGE</span><strong id="stat-coverage">—</strong></div>
       </section>
 
-      <section class="ask-repo" aria-labelledby="ask-repo-title">
+      <section class="generic-onboarding" id="generic-onboarding" hidden>
+        <span class="onboarding-icon">⌂</span>
+        <div><p class="eyebrow">LOCAL DEVELOPER WORKSPACE</p><strong>Your repository stays fixed to this local process.</strong><p>Timeline, branch review, and answers come from Git evidence only. No repository text is uploaded and no model call runs in this mode.</p></div>
+        <span class="privacy-label"><i></i> LOCAL · DETERMINISTIC</span>
+      </section>
+
+      <section class="ask-repo" id="ask-repo" aria-labelledby="ask-repo-title">
         <div class="ask-repo-intro">
           <span class="ask-mark">✦</span>
-          <div><p class="eyebrow">ASK THE REPO</p><h2 id="ask-repo-title">Question the history, not just the code.</h2></div>
-          <span class="ask-grounded"><i></i> Answers cite Git evidence</span>
+          <div><p class="eyebrow" id="ask-repo-eyebrow">ASK THE REPO</p><h2 id="ask-repo-title">Question the history, not just the code.</h2></div>
+          <span class="ask-grounded" id="ask-grounded"><i></i> Answers cite Git evidence</span>
         </div>
-        <div class="ask-prompts" aria-label="Suggested repository questions">
+        <div class="ask-prompts" id="ask-prompts" aria-label="Suggested repository questions">
           <button data-ask-question="pricing-complexity"><span>01</span> Why is pricing complicated?</button>
           <button data-ask-question="stale-price-origin"><span>02</span> When was the stale-price bug introduced?</button>
           <button data-ask-question="change-risk"><span>03</span> What would be risky to change now?</button>
+        </div>
+      </section>
+
+      <section class="branch-review" id="branch-review" aria-labelledby="branch-review-title" hidden>
+        <header class="branch-review-header">
+          <div><p class="eyebrow">REVIEW MY BRANCH</p><h2 id="branch-review-title">Connect this change to its history.</h2><p>Compare two Git revisions without changing the repository selected by the server.</p></div>
+          <form class="branch-review-form" id="branch-review-form">
+            <label>BASE<input id="context-base" name="base" autocomplete="off" spellcheck="false" /></label>
+            <span>→</span>
+            <label>HEAD<input id="context-head" name="head" autocomplete="off" spellcheck="false" /></label>
+            <button type="submit">Review branch</button>
+          </form>
+        </header>
+        <div class="branch-review-results" id="branch-review-results">
+          <p>Select a base and head revision to inspect changed files and connected history.</p>
         </div>
       </section>
 

@@ -5,6 +5,10 @@ const state = {
   filter: "all",
   investigation: null,
   answers: {},
+  questions: [],
+  contextBase: null,
+  contextHead: null,
+  isOrbitCart: true,
   traceReturnFocus: null,
   askReturnFocus: null,
 };
@@ -47,6 +51,13 @@ const labels = {
   change: "Change",
 };
 
+function eventTypeLabel(event) {
+  const label = labels[event.type] || "Change";
+  return !state.isOrbitCart && event.type_certainty === "inferred"
+    ? `${label} · inferred`
+    : label;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -79,7 +90,7 @@ function renderTimeline() {
         <button class="event-card ${event.type} ${event.id === state.selectedId ? "selected" : ""}" data-event-id="${escapeHtml(event.id)}" aria-pressed="${event.id === state.selectedId}">
           <span class="event-node">${icons[event.type] || "•"}</span>
           <span class="event-content">
-            <span class="event-meta"><span class="type-badge">${labels[event.type] || "Change"}</span><time>${formatDate(event.occurred_at)}</time></span>
+            <span class="event-meta"><span class="type-badge">${eventTypeLabel(event)}</span><time>${formatDate(event.occurred_at)}</time></span>
             <strong>${escapeHtml(event.title)}</strong>
             <span class="event-summary">${escapeHtml(event.summary)}</span>
             <span class="event-footer"><code>${escapeHtml(event.short_hash)}</code><span>${event.files.length} file${event.files.length === 1 ? "" : "s"}</span><span class="certainty"><i></i>${escapeHtml(event.certainty)}</span></span>
@@ -110,8 +121,14 @@ function showAllEvents() {
   });
 }
 
+function openEvidenceEvent(eventId) {
+  showAllEvents();
+  selectEvent(eventId);
+  document.querySelector(".workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function renderDetail(event) {
-  const traceable = event.title.toLowerCase().includes("stale checkout");
+  const traceable = state.isOrbitCart && event.title.toLowerCase().includes("stale checkout");
   const related = event.related_event_ids
     .map((id) => state.events.find((item) => item.id === id))
     .filter(Boolean);
@@ -119,7 +136,7 @@ function renderDetail(event) {
     <header class="detail-header ${event.type}">
       <div class="detail-title-row">
         <span class="large-icon">${icons[event.type] || "•"}</span>
-        <div><span class="type-badge">${labels[event.type] || "Change"}</span><h2>${escapeHtml(event.title)}</h2></div>
+        <div><span class="type-badge">${eventTypeLabel(event)}</span><h2>${escapeHtml(event.title)}</h2></div>
       </div>
       <div class="detail-meta"><time>${formatDate(event.occurred_at)}</time><span>by ${escapeHtml(event.author)}</span><code>${escapeHtml(event.short_hash)}</code></div>
     </header>
@@ -170,6 +187,7 @@ function closeAsk() {
 
 function answerSource(answer) {
   if (answer.source === "codex-gpt-5.6") return { label: "GPT-5.6 Sol in Codex · validated", className: "codex" };
+  if (answer.source === "local-evidence-engine") return { label: "Local evidence engine · deterministic", className: "local" };
   return { label: "Evidence fallback · demo safe", className: "fallback" };
 }
 
@@ -219,33 +237,136 @@ async function askRepo(questionId) {
   window.innerHTML = `<button class="trace-close loading-close" data-close-ask aria-label="Close answer">×</button><div class="ask-loading"><div class="ask-loader">?</div><p class="eyebrow">READING REPOSITORY EVIDENCE</p><h2 id="ask-answer-title">Following commits, files, and recorded risks…</h2></div>`;
   window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
   try {
-    if (!state.answers[questionId]) {
-      state.answers[questionId] = await requestJson(
-        "/api/projects/orbitcart/ask",
+    const base = document.querySelector("#context-base").value || state.contextBase;
+    const head = document.querySelector("#context-head").value || state.contextHead;
+    const cacheKey = state.isOrbitCart ? questionId : `${questionId}:${base}:${head}`;
+    if (!state.answers[cacheKey]) {
+      const endpoint = state.isOrbitCart ? "/api/projects/orbitcart/ask" : "/api/questions/answer";
+      const body = state.isOrbitCart ? { question_id: questionId } : { question_id: questionId, base, head };
+      state.answers[cacheKey] = await requestJson(
+        endpoint,
         `./demo-data/ask-${questionId}.json`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question_id: questionId }),
+          body: JSON.stringify(body),
         },
       );
     }
-    window.innerHTML = renderAskAnswer(state.answers[questionId]);
+    window.innerHTML = renderAskAnswer(state.answers[cacheKey]);
     window.scrollTop = 0;
     window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
     window.querySelector("[data-close-ask]")?.focus();
     window.querySelectorAll("[data-ask-event]").forEach((button) => {
       button.addEventListener("click", () => {
         closeAsk();
-        showAllEvents();
-        selectEvent(button.dataset.askEvent);
-        document.querySelector(".workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+        openEvidenceEvent(button.dataset.askEvent);
       });
     });
   } catch (error) {
     window.innerHTML = `<button class="trace-close loading-close" data-close-ask aria-label="Close answer">×</button><div class="ask-loading"><strong>Answer unavailable</strong><p>${escapeHtml(error.message)}</p></div>`;
     window.querySelectorAll("[data-close-ask]").forEach((button) => button.addEventListener("click", closeAsk));
   }
+}
+
+function bindAskButtons() {
+  document.querySelectorAll("[data-ask-question]").forEach((button) => {
+    button.addEventListener("click", () => askRepo(button.dataset.askQuestion));
+  });
+}
+
+function contextItems(items, renderItem, emptyLabel) {
+  if (!items.length) return `<p class="context-empty">${escapeHtml(emptyLabel)}</p>`;
+  return `<div class="context-list">${items.map(renderItem).join("")}</div>`;
+}
+
+function renderBranchContext(context) {
+  const recent = Object.entries(context.recent_commits_by_file)
+    .flatMap(([path, commits]) => commits.map((commit) => ({ ...commit, path })));
+  const changedFiles = context.changed_files;
+  const rangeCommits = context.range_commits;
+  const incidents = context.connected_incidents_and_fixes;
+  const risks = context.recorded_risks;
+  const missing = context.missing_evidence;
+  return `
+    <div class="context-summary">
+      <span><strong>${escapeHtml(context.range.base)}</strong> <code>${escapeHtml(context.range.base_commit.slice(0, 7))}</code> → <strong>${escapeHtml(context.range.head)}</strong> <code>${escapeHtml(context.range.head_commit.slice(0, 7))}</code></span>
+      <span>${changedFiles.length} changed files · ${rangeCommits.length} range commits</span>
+    </div>
+    <div class="context-grid">
+      <section class="context-card">
+        <h3>Changed files</h3>
+        ${contextItems(changedFiles, (item) => `<div class="context-item"><code>${escapeHtml(item.status)}</code><span>${escapeHtml(item.path)}</span></div>`, "No files differ between these revisions.")}
+      </section>
+      <section class="context-card">
+        <h3>Range commits</h3>
+        ${contextItems(rangeCommits, (item) => `<button class="context-item" data-context-event="${escapeHtml(item.event_id)}"><code>${escapeHtml(item.commit)}</code><span>${escapeHtml(item.title)}</span></button>`, "No commits are unique to this range.")}
+      </section>
+      <section class="context-card">
+        <h3>Incidents and fixes</h3>
+        ${contextItems(incidents, (item) => `<button class="context-item" data-context-event="${escapeHtml(item.event_id)}"><code>${escapeHtml(item.type)}</code><span>${escapeHtml(item.title)}</span></button>`, "No incident or fix overlaps these files.")}
+      </section>
+      <section class="context-card wide">
+        <h3>Recent history for changed files</h3>
+        ${contextItems(recent, (item) => `<button class="context-item" data-context-event="${escapeHtml(item.event_id)}"><code>${escapeHtml(item.commit)}</code><span>${escapeHtml(item.path)} · ${escapeHtml(item.title)}</span></button>`, "No earlier file history is available.")}
+      </section>
+      <section class="context-card">
+        <h3>Recorded risks</h3>
+        ${contextItems(risks, (item) => `<button class="context-item" data-context-event="${escapeHtml(item.event_id)}"><code>${escapeHtml(item.commit)}</code><span>${escapeHtml(item.risk)}</span></button>`, "No structured risks are recorded for these files.")}
+      </section>
+      <section class="context-card">
+        <h3>Missing evidence</h3>
+        ${contextItems(missing, (item) => `<div class="context-item"><span>${escapeHtml(item)}</span></div>`, "No range-level evidence gap was added.")}
+      </section>
+    </div>`;
+}
+
+async function reviewBranch() {
+  const results = document.querySelector("#branch-review-results");
+  const base = document.querySelector("#context-base").value.trim();
+  const head = document.querySelector("#context-head").value.trim();
+  state.contextBase = base;
+  state.contextHead = head;
+  state.answers = {};
+  results.innerHTML = '<p>Connecting changed files to repository history…</p>';
+  try {
+    const context = await requestJson(
+      `/api/context?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`,
+      "",
+    );
+    results.innerHTML = renderBranchContext(context);
+    results.querySelectorAll("[data-context-event]").forEach((button) => {
+      button.addEventListener("click", () => openEvidenceEvent(button.dataset.contextEvent));
+    });
+  } catch (error) {
+    results.innerHTML = `<p class="context-error">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function configureDeveloperWorkspace(project) {
+  document.querySelector("#runtime-label").textContent = "Local Git · no model call";
+  document.querySelector("#generic-onboarding").hidden = false;
+  document.querySelector("#branch-review").hidden = false;
+  document.querySelector("#ask-repo-eyebrow").textContent = "EXPLORE REPOSITORY EVIDENCE";
+  document.querySelector("#ask-repo-title").textContent = "Ask deterministic questions about this history.";
+  document.querySelector("#ask-grounded").innerHTML = "<i></i> Local evidence engine · no GPT call";
+  document.querySelector("#context-base").value = project.suggested_base || "main";
+  document.querySelector("#context-head").value = "HEAD";
+  state.contextBase = document.querySelector("#context-base").value;
+  state.contextHead = "HEAD";
+  try {
+    const response = await requestJson("/api/questions", "");
+    state.questions = response.questions;
+    const prompts = document.querySelector("#ask-prompts");
+    prompts.classList.add("generic");
+    prompts.innerHTML = response.questions.map((question, index) => `
+      <button data-ask-question="${escapeHtml(question.id)}"><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(question.question)}</button>
+    `).join("");
+    bindAskButtons();
+  } catch (error) {
+    document.querySelector("#ask-prompts").innerHTML = `<p class="context-error">${escapeHtml(error.message)}</p>`;
+  }
+  await reviewBranch();
 }
 
 function traceNode(item, index, analysis) {
@@ -341,13 +462,23 @@ async function openTrace() {
 async function loadTimeline() {
   try {
     const data = await requestJson(
-      "/api/projects/orbitcart/timeline",
+      "/api/timeline",
       "./demo-data/timeline.json",
     );
     state.events = data.events;
+    state.isOrbitCart = data.project.mode !== "real-repo";
     document.querySelector("#project-name").textContent = data.project.name;
     document.querySelector("#project-description").textContent = data.project.description;
     document.querySelector("#branch-name").textContent = data.project.branch;
+    document.querySelector("#repository-label").textContent = data.project.name.toUpperCase();
+    document.querySelector("#repo-icon").textContent = data.project.name
+      .split(/[^a-z0-9]+/i)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "RE";
+    document.querySelector("#ask-repo").hidden = false;
     document.querySelector("#stat-commits").textContent = data.stats.commits;
     document.querySelector("#stat-bugs").textContent = data.stats.bugs;
     document.querySelector("#stat-files").textContent = data.stats.files_touched;
@@ -355,8 +486,9 @@ async function loadTimeline() {
     renderTimeline();
     const headline = state.events.find((event) => event.title.toLowerCase().includes("stale checkout"));
     selectEvent(headline?.id || state.events.at(-1)?.id);
+    if (!state.isOrbitCart) await configureDeveloperWorkspace(data.project);
   } catch (error) {
-    timeline.innerHTML = `<div class="error-state"><strong>History unavailable</strong><p>${escapeHtml(error.message)}</p><small>Run python3 scripts/create_orbitcart.py, then restart the server.</small></div>`;
+    timeline.innerHTML = `<div class="error-state"><strong>History unavailable</strong><p>${escapeHtml(error.message)}</p><small>Check the selected repository and revision, then restart the server.</small></div>`;
   }
 }
 
@@ -372,7 +504,11 @@ document.querySelectorAll(".filter").forEach((button) => {
 });
 
 document.querySelectorAll("[data-close-trace]").forEach((element) => element.addEventListener("click", closeTrace));
-document.querySelectorAll("[data-ask-question]").forEach((button) => button.addEventListener("click", () => askRepo(button.dataset.askQuestion)));
+bindAskButtons();
+document.querySelector("#branch-review-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  reviewBranch();
+});
 document.querySelectorAll("[data-close-ask]").forEach((element) => element.addEventListener("click", closeAsk));
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !document.querySelector("#trace-overlay").hidden) closeTrace();

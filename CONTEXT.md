@@ -1,6 +1,6 @@
 # AI Time Machine — Current Handoff
 
-Last refreshed: July 16, 2026 (Asia/Kolkata)
+Last refreshed: July 17, 2026 (Asia/Kolkata)
 
 ## Start here
 
@@ -65,11 +65,39 @@ Working and verified:
   visible focus states.
 - The public deployment serves a validated, API-free Git evidence snapshot and
   clearly labels it `Git snapshot verified`.
+- Real Repo Mode analyzes and serves an arbitrary local Git worktree through
+  `python3 -m app.cli` without GitHub OAuth or an OpenAI API key.
+- Generic ingestion preserves subjects, authors, dates, commits, changed files,
+  rename-aware overlap history, and the normalized browser timeline contract.
+- Missing rationale and risk are labeled exactly `not recorded`; types derived
+  from conventional-commit prefixes carry inferred classification metadata.
+- Branch or commit-range context reports changed files, range commits, recent
+  history for those files, connected incidents or fixes, and recorded risks.
+- Repository selection is fixed at local server startup, so HTTP requests cannot
+  expose arbitrary filesystem paths. OrbitCart-only artifacts are disabled in
+  generic mode.
+- The workflow is dogfooded on AI Time Machine: all nine committed milestones
+  rendered chronologically, and `d79beca..HEAD` produced an evidence-grounded
+  43-file, eight-commit context report at verification time.
+- Developer Workspace launches the current repository with
+  `python3 -m app.cli serve --open`; browser opening remains opt-in.
+- Generic mode now shows a visual **Review my branch** report with base/head,
+  changed files, range commits, per-file history, incidents/fixes, recorded
+  risks, and missing evidence. Evidence items navigate to timeline events.
+- Four adaptive deterministic questions cover recent changes, co-changing
+  files, branch problem history, and missing rationale. Their answers validate
+  every cited event, commit, and same-event file before rendering.
+- Generic onboarding labels the source `Local evidence engine · deterministic`,
+  states that no model call runs, and explains that the selected repository is
+  fixed to the local process.
+- M4.6 is browser verified on desktop and 390 × 844 with no page overflow or
+  console errors. OrbitCart still exposes only its original three questions and
+  validated six-stage trace.
 - The production timeline, stale-price answer, citation navigation, and six-stage
   Bug Origin Trace are browser verified with no console errors.
 - Final desktop, trace, and mobile screenshots plus the project thumbnail are
   committed under `docs/screenshots/` and `frontend/project-thumbnail.png`.
-- Twenty-nine application tests and the OrbitCart regression test pass.
+- Thirty-nine application tests and the OrbitCart regression test pass.
 - The local app runs at `http://127.0.0.1:8765`.
 
 ## Financial and hackathon constraint
@@ -83,26 +111,40 @@ The submission story must say that GPT-5.6 in Codex materially helped design,
 build, test, review, and evaluate the causal workflow. Do not imply that the
 runtime called GPT-5.6 unless a real live call occurred.
 
+## Approved upcoming product milestones
+
+- **M4.6 Developer Workspace:** complete; one-command local launch, visual
+  **Review my branch**, and four adaptive deterministic questions with clickable
+  evidence are verified.
+- **M6 Optional BYOK analysis:** a disabled-by-default local question endpoint
+  that reads a user-owned Platform API key from the server environment. Never
+  accept or store the key in the public browser UI.
+- **M7 GitHub connection:** first reuse existing local Git/SSH/credential-manager
+  or `gh` authentication; evaluate a read-only selected-repository GitHub App
+  only as a later hosted integration.
+
+Detailed requirements and security boundaries are in
+`docs/UPCOMING_DEVELOPER_MILESTONES.md`.
+
 ## Exact next task
 
-Implement **M4.5 — Real Repo Mode** in a fresh Codex task, following
-`docs/M4.5_REAL_REPO_MODE.md`:
+Begin **M5 — Demo and submission**:
 
-1. Add a local CLI that analyzes and serves an arbitrary Git repository.
-2. Generalize ingestion for repositories without structured `Summary:`, `Why:`,
-   and `Risk:` commit bodies; missing rationale must remain `not recorded`.
-3. Add branch or commit-range context for files changed between `base` and
-   `head`.
-4. Dogfood the workflow on the AI Time Machine repository itself.
-5. Keep OrbitCart, the public demo, and the complete judge verification green.
-6. Only after the required workflow passes, consider the optional validated
-   Codex question-artifact command described in the M4.5 brief.
+1. Record the public YouTube demo under three minutes, leading with OrbitCart's
+   stale-price investigation and briefly proving Real Repo Mode on this repo.
+2. Explain GPT-5.6 Sol in Codex honestly as build-time analysis, implementation,
+   review, and validated artifact generation—not a live runtime call.
+3. Capture the required `/feedback` Codex session ID.
+4. Finalize the Devpost description and testing instructions.
+5. Re-run `python3 scripts/verify.py` and verify every public link before submit.
 
 ## Important implementation paths
 
 - `PRODUCT_CONTRACT.md` — fixed MVP promise and evidence rules
 - `scripts/create_orbitcart.py` — deterministic 12-commit demo repository
 - `app/git_ingest.py` — Git-to-timeline evidence extraction
+- `app/cli.py` — local analyze, serve, and context commands
+- `app/repo_questions.py` — deterministic generic questions and citation validation
 - `app/analysis.py` — strict causal-analysis schema, optional API adapter, fallback
 - `app/ask_repo.py` — fixed questions, answer validation, artifact replay, fallback
 - `scripts/codex_artifact.py` — evidence export and artifact validation CLI
@@ -118,6 +160,7 @@ Implement **M4.5 — Real Repo Mode** in a fresh Codex task, following
 - `frontend/app.js` — timeline, detail, and Bug Origin Trace behavior
 - `frontend/styles.css` — responsive developer-tool visual system
 - `tests/test_git_ingest.py` — ingestion and evidence tests
+- `tests/test_real_repo_mode.py` — generic repository and range failure cases
 - `tests/test_analysis.py` — causal grounding and fallback tests
 - `docs/ai-analysis.md` — current analysis architecture
 - `docs/DECISIONS.md` — durable architecture decisions
@@ -128,6 +171,10 @@ Implement **M4.5 — Real Repo Mode** in a fresh Codex task, following
 ```bash
 python3 scripts/create_orbitcart.py
 python3 -m app.server
+python3 -m app.cli analyze .
+python3 -m app.cli serve .
+python3 -m app.cli serve --open
+python3 -m app.cli context . --base d79beca --head HEAD
 ```
 
 Open <http://127.0.0.1:8765>.
@@ -146,7 +193,10 @@ git diff --check
 
 ## Known gaps
 
-- Real Repo Mode is specified but not implemented.
+- The optional validated Codex question artifact for arbitrary repositories was
+  intentionally deferred after completing the required API-free workflow.
+- The BYOK endpoint and GitHub connection are post-submission and not
+  implemented. M6 and M7 must not delay submission.
 - The public YouTube demo and Devpost submission copy are pending.
 - The required `/feedback` Codex session ID still needs to be captured for the
   final submission.

@@ -63,7 +63,7 @@ Target: July 19
 
 ### M4.5 — Real Repo Mode
 
-Status: Next
+Status: Complete
 
 Target: July 17
 
@@ -72,7 +72,20 @@ Target: July 17
 - Branch or commit-range change context
 - Self-analysis using the AI Time Machine repository
 - Tests for invalid repositories, empty history, and range errors
-- Optional validated Codex question artifact only after the core flow passes
+- Optional validated Codex question artifact deferred; the required local
+  evidence workflow is complete and M5 remains the priority
+
+### M4.6 — Developer Workspace
+
+Status: Complete
+
+Target: timeboxed before M5 only if the release stays green
+
+- One-command local launch with optional automatic browser opening
+- Visual **Review my branch** workspace using the existing context engine
+- Four adaptive deterministic repository questions with clickable evidence
+- Generic-mode onboarding and privacy/source labels
+- OrbitCart questions, trace, and zero-key verification remain unchanged
 
 ### M5 — Demo and submission
 
@@ -87,3 +100,23 @@ Target: July 20
 - Verify repository, deployment, video, and links
 
 July 21 is reserved only for submission verification and emergencies.
+
+### M6 — Optional BYOK analysis
+
+Status: Post-submission
+
+- User supplies `OPENAI_API_KEY` to the local server environment
+- Local question endpoint builds a bounded evidence bundle
+- Strict citation validation, cost notice, caching, timeouts, and fallback
+- No API key fields or secrets in the public browser application
+
+### M7 — GitHub connection
+
+Status: Post-submission
+
+- First reuse existing local Git, SSH, credential-manager, or `gh` authentication
+- Later evaluate a read-only, selected-repository GitHub App
+- Do not implement broad OAuth access, hosted private-repository storage, or
+  token custody inside the hackathon timebox
+
+See `docs/UPCOMING_DEVELOPER_MILESTONES.md` for the scope and security boundaries.

@@ -27,11 +27,17 @@ class ResponsiveCssTests(unittest.TestCase):
         tablet = self._media_block(980)
         self.assertIn(".workspace { grid-template-columns: 1fr;", tablet)
         self.assertIn(".ask-repo { grid-template-columns: 1fr;", tablet)
+        self.assertIn(".branch-review-header { grid-template-columns: 1fr;", tablet)
         self.assertIn(".trace-footer-grid { grid-template-columns: 1fr;", tablet)
 
     def test_mobile_layout_uses_single_column_answers(self) -> None:
         mobile = self._media_block(650)
-        self.assertIn(".ask-prompts, .ask-evidence-grid { grid-template-columns: 1fr;", mobile)
+        self.assertIn(
+            ".ask-prompts, .ask-prompts.generic, .ask-evidence-grid { grid-template-columns: 1fr;",
+            mobile,
+        )
+        self.assertIn(".branch-review-form { align-items: stretch; flex-direction: column;", mobile)
+        self.assertIn(".context-grid { grid-template-columns: 1fr;", mobile)
         self.assertIn(".evidence-list, .related-list { grid-template-columns: 1fr;", mobile)
         self.assertIn(".repo-card { min-width: 0; }", mobile)
         self.assertIn(".trace-window { width: 100%;", mobile)
