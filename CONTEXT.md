@@ -1,6 +1,6 @@
 # AI Time Machine — Current Handoff
 
-Last refreshed: July 17, 2026 (Asia/Kolkata)
+Last refreshed: July 19, 2026 (Asia/Kolkata)
 
 ## Start here
 
@@ -93,12 +93,23 @@ Working and verified:
 - M4.6 is browser verified on desktop and 390 × 844 with no page overflow or
   console errors. OrbitCart still exposes only its original three questions and
   validated six-stage trace.
+- Desktop timeline and detail panels now own independent scroll regions, so
+  long affected-file and connected-history content remains reachable instead of
+  being clipped by the workspace boundary.
+- A site-wide readability pass raises all interface text to at least 10px,
+  increases body and evidence copy to 11–15px, and strengthens muted-text
+  contrast. Desktop and 390 × 844 layouts remain free of horizontal overflow,
+  and answer/detail panels retain their vertical scrolling.
+- Timeline filters use fixed 36px inline-flex controls with centered labels;
+  they remain aligned on desktop and horizontally scrollable at 390 × 844.
 - The production timeline, stale-price answer, citation navigation, and six-stage
   Bug Origin Trace are browser verified with no console errors.
 - Final desktop, trace, and mobile screenshots plus the project thumbnail are
   committed under `docs/screenshots/` and `frontend/project-thumbnail.png`.
-- Thirty-nine application tests and the OrbitCart regression test pass.
-- The local app runs at `http://127.0.0.1:8765`.
+- Forty-two application tests and the OrbitCart regression test pass.
+- The local app runs at `http://127.0.0.1:8765` and currently serves the
+  bundled OrbitCart repository via
+  `python3 -m app.cli serve .data/orbitcart`.
 
 ## Financial and hackathon constraint
 
