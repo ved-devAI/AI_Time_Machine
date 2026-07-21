@@ -1,6 +1,6 @@
 # AI Time Machine — Current Handoff
 
-Last refreshed: July 19, 2026 (Asia/Kolkata)
+Last refreshed: July 21, 2026 (Asia/Kolkata)
 
 ## Start here
 
@@ -35,19 +35,23 @@ Working and verified:
 - The default trace replays a committed GPT-5.6 Sol analysis generated through
   ChatGPT-authenticated Codex, with no runtime API key or paid API call.
 - Artifact validation checks its evidence digest, exact six-stage sequence,
-  event IDs, commits, and file references before anything reaches the UI.
+  event IDs, commits, and file references before anything reaches the UI. This
+  is reference-integrity validation; it does not yet prove that arbitrary prose
+  is semantically entailed by the cited metadata.
 - The trace shows honest source provenance, the evidence digest, and the Codex
   session ID `019f662f-d32a-7db2-9977-560867fef985`.
 - A strict GPT-5.6 Responses API adapter exists but is optional.
 - If the artifact is missing or invalid, the app uses a clearly labeled
   evidence fallback.
-- Successful optional model responses are cached to control cost.
+- Successful optional model responses are cached in a versioned envelope tied
+  to the current evidence digest and selected model. Cache reads revalidate the
+  digest, provenance fields, generation time, and complete analysis payload.
 - The full trace and origin-node navigation are browser verified with no
   console errors.
 - Ask the Repo presents three judge-ready questions covering pricing
   complexity, stale-price origin, and current change risk.
-- The three answers replay a validated GPT-5.6 Sol Codex artifact and cite only
-  real timeline events, commits, and same-event files.
+- The three answers replay a reference-validated GPT-5.6 Sol Codex artifact and
+  cite only real timeline events, commits, and same-event files.
 - Every citation opens the exact supporting timeline event; fabricated events
   and cross-event file references are rejected by tests.
 - Ask the Repo records Codex session
@@ -106,10 +110,39 @@ Working and verified:
   Bug Origin Trace are browser verified with no console errors.
 - Final desktop, trace, and mobile screenshots plus the project thumbnail are
   committed under `docs/screenshots/` and `frontend/project-thumbnail.png`.
-- Forty-two application tests and the OrbitCart regression test pass.
+- M5 trust semantics are complete: Real Repo Mode labels the percentage
+  `Commit + diff verified`, while OrbitCart retains `Evidence coverage`.
+- Non-empty branch reviews explicitly report missing rationale counts, absent
+  structured risk, changed files without incident/fix history, and the local
+  Git-only boundary for operational evidence.
+- M5.1 trust integrity is complete: the UI names reference validation precisely,
+  generic events separate Git verification from missing rationale instead of
+  showing blanket 98% confidence, and optional live caches cannot cross evidence
+  or model boundaries.
+- Fifty-one application tests and the OrbitCart regression test pass.
+- M5.1 is browser verified on OrbitCart and Real Repo Mode with no console
+  warnings or errors. Real Repo Mode at 390 × 844 has no horizontal overflow.
 - The local app runs at `http://127.0.0.1:8765` and currently serves the
   bundled OrbitCart repository via
   `python3 -m app.cli serve .data/orbitcart`.
+
+## July 20 judge review
+
+A skeptical judge-facing audit is recorded in `docs/M5.md`. It rates the
+current project at 7.4/10 and
+submission readiness at 5.5/10, with a plausible 8.3/10 outcome after focused
+M5.1 and M6 execution. These are internal challenge scores, not official judging
+predictions.
+
+The review confirmed the full verification suite, public OrbitCart flows,
+desktop and 390 x 844 behavior, and generic self-analysis. Its two identified
+trust issues were corrected in M5: generic coverage now names only commit and
+diff verification, and non-empty branch context now lists rationale, risk,
+incident/fix, and operational evidence gaps.
+
+The live July 20 self-analysis produced 11 events. The `d79beca..HEAD` review
+produced 49 changed files and 10 range commits, superseding the older run-specific
+counts above. Do not use either snapshot as a permanent product claim.
 
 ## Financial and hackathon constraint
 
@@ -124,30 +157,40 @@ runtime called GPT-5.6 unless a real live call occurred.
 
 ## Approved upcoming product milestones
 
-- **M4.6 Developer Workspace:** complete; one-command local launch, visual
-  **Review my branch**, and four adaptive deterministic questions with clickable
-  evidence are verified.
-- **M6 Optional BYOK analysis:** a disabled-by-default local question endpoint
-  that reads a user-owned Platform API key from the server environment. Never
-  accept or store the key in the public browser UI.
-- **M7 GitHub connection:** first reuse existing local Git/SSH/credential-manager
-  or `gh` authentication; evaluate a read-only selected-repository GitHub App
-  only as a later hosted integration.
+- **M5 Trust Semantics:** complete and verified July 20; broad feature work is
+  frozen for submission.
+- **M5.1 Submission Trust-Integrity Hotfix:** complete and verified July 21;
+  cached live analysis is evidence-bound, UI wording names reference integrity,
+  and generic events no longer show blanket causal-looking confidence.
+- **M6 Demo and Submission:** produce the judge-facing narrative,
+  README details, public YouTube demo, `/feedback` session ID, Devpost entry,
+  and final release verification.
+- **M7 Git History Correctness:** post-submission merge-base, merge-commit,
+  rename, and pre-branch history correctness.
+- **M8 Code-Aware Semantic Grounding:** bounded diff evidence, stronger schema
+  invariants, entailment evaluation, then optional local-server BYOK.
+- **M9 Large-Repository Performance:** bounded and batched ingestion, safe
+  caching, pagination, and noise controls.
+- **M10 Repository Connectivity:** reuse local Git authentication first and
+  evaluate a selected-repository GitHub App only after the local path is sound.
 
 Detailed requirements and security boundaries are in
 `docs/UPCOMING_DEVELOPER_MILESTONES.md`.
 
 ## Exact next task
 
-Begin **M5 — Demo and submission**:
+Execute **M6 — Demo and Submission** from `docs/M5.md` without adding product
+scope:
 
-1. Record the public YouTube demo under three minutes, leading with OrbitCart's
-   stale-price investigation and briefly proving Real Repo Mode on this repo.
-2. Explain GPT-5.6 Sol in Codex honestly as build-time analysis, implementation,
-   review, and validated artifact generation—not a live runtime call.
+1. Finalize the judge-facing pitch, Devpost copy, limitations, and exact test
+   instructions using reference-integrity language.
+2. Record and publish the under-three-minute YouTube demo.
 3. Capture the required `/feedback` Codex session ID.
-4. Finalize the Devpost description and testing instructions.
-5. Re-run `python3 scripts/verify.py` and verify every public link before submit.
+4. Verify the public demo, GitHub repository, video, Devpost links, and final
+   release commands.
+
+Do not start M7-M10, OAuth, a broad redesign, or an open-ended unvalidated chat
+before M6 is complete.
 
 ## Important implementation paths
 
@@ -164,6 +207,7 @@ Begin **M5 — Demo and submission**:
 - `scripts/verify.py` — complete zero-dependency judge verification
 - `evaluations/orbitcart_grounding.json` — expected causal and citation evidence
 - `docs/EVALUATION.md` — reliability design and manual visual checklist
+- `docs/M5.md` — skeptical review plus M5 trust-fix and M6 submission plan
 - `docs/M4.5_REAL_REPO_MODE.md` — required scope, proof, tests, and non-goals
 - `artifacts/orbitcart/` — prompt, schema, evidence, and validated Codex result
 - `app/server.py` — local HTTP and JSON endpoints
@@ -204,10 +248,18 @@ git diff --check
 
 ## Known gaps
 
+- Current artifact checks prove evidence digest and reference integrity, not
+  semantic entailment of arbitrary natural-language claims.
+- Generic ingestion currently supplies changed filenames and commit metadata,
+  not bounded code-diff excerpts, to model analysis.
+- Diverged branch reviews need merge-base semantics; merge commits need explicit
+  diff semantics; problem-history questions must separate pre-branch evidence
+  from events inside the reviewed range.
+- Timeline ingestion and co-change analysis need explicit large-repository
+  limits, batching, pagination, and generated/vendor-file controls.
 - The optional validated Codex question artifact for arbitrary repositories was
   intentionally deferred after completing the required API-free workflow.
-- The BYOK endpoint and GitHub connection are post-submission and not
-  implemented. M6 and M7 must not delay submission.
+- M8 BYOK and M10 GitHub connection are post-submission and not implemented.
 - The public YouTube demo and Devpost submission copy are pending.
 - The required `/feedback` Codex session ID still needs to be captured for the
   final submission.

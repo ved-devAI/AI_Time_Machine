@@ -187,3 +187,60 @@ read-only metadata and contents permissions for explicitly selected repositories
 This is deferred because it introduces callback hosting, app credentials,
 short-lived token handling, organization approval, private-code isolation and
 deletion, rate limits, auditability, and a larger security and privacy surface.
+
+## ADR-014 — Separate Git verification from historical completeness
+
+Status: Accepted — July 20, 2026
+
+The generic timeline percentage describes only observable commit and diff
+verification. Real Repo Mode therefore labels it `Commit + diff verified`,
+while OrbitCart retains its validated `Evidence coverage` wording and behavior.
+A 100% generic value must not imply that rationale, risk, incident, review,
+deployment, or production evidence exists.
+
+Branch context derives explicit evidence gaps for every non-empty diff: the
+count of range commits without a recorded `Why:` field, absence of structured
+risks, exact changed files without connected incident/fix history, and a notice
+that deployment records, issue and review systems, and production telemetry are
+outside the local Git-only boundary. These are honest absence statements, not
+inferences about systems the repository cannot observe.
+
+M5 is the final product-code milestone. After focused regressions, the complete
+judge verification workflow, and desktop plus 390 x 844 browser checks passed,
+product code was frozen so remaining work is limited to the M6 submission
+package and release verification.
+
+## ADR-015 — Correct trust boundaries before adding model breadth
+
+Status: Accepted — July 20, 2026
+
+A follow-up adversarial audit demonstrated that current artifact validators
+prove evidence digest and reference integrity but do not prove that arbitrary
+natural-language prose is entailed by a cited commit and filename. It also
+demonstrated that the optional live cache is returned without rebinding the
+payload to the current evidence digest. These are trust-boundary defects in
+already exposed behavior, so M5.1 is the only approved pre-submission exception
+to the M5 broad feature freeze.
+
+M5.1 must revalidate cached payloads and evidence digests, use precise
+reference-integrity language, and stop presenting generic commit existence as a
+blanket 98% causal confidence. It must not add free-form chat, remote repository
+access, or a new credential surface.
+
+Post-submission work is ordered by dependency rather than feature appeal:
+
+1. M7 fixes Git-history correctness for merge bases, merge commits, renames, and
+   pre-branch versus in-range history.
+2. M8 adds bounded code-diff evidence, complete schema and relationship checks,
+   and entailment-oriented evaluation before optional BYOK questions.
+3. M9 adds explicit scale limits, batched ingestion, safe caching, pagination,
+   and repository-noise controls.
+4. M10 adds local Git-auth reuse and only later evaluates a hosted GitHub App.
+
+This ordering prevents live model access, larger repositories, or remote
+connectivity from amplifying evidence-contract and Git-semantics defects.
+
+M5.1 completed on July 21. Live cache envelopes now bind model, generation time,
+and evidence digest to a fully revalidated payload. The UI describes Codex
+results as reference-validated, while generic timeline events show Git
+verification, inferred classification, and missing rationale separately.

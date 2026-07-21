@@ -70,12 +70,113 @@ class AnalysisTests(unittest.TestCase):
             self.assertEqual(result["source"], "gpt-5.6")
             self.assertEqual(result["delivery"], "live")
             self.assertTrue(cache.exists())
+            envelope = json.loads(cache.read_text(encoding="utf-8"))
+            self.assertEqual(envelope["cache_version"], 1)
+            self.assertEqual(envelope["evidence_sha256"], evidence_digest(self.timeline))
+            self.assertEqual(envelope["model"], "gpt-5.6")
+            self.assertEqual(envelope["payload"]["source"], "gpt-5.6")
             request.assert_called_once()
+
+    def test_valid_live_cache_is_revalidated_and_reused(self) -> None:
+        model_result = deterministic_investigation(self.timeline)
+        environment = {
+            "OPENAI_API_KEY": "test-key",
+            "OPENAI_MODEL": "gpt-5.6",
+            "AI_TIME_MACHINE_ANALYSIS_MODE": "live",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / "analysis.json"
+            with (
+                patch.dict(os.environ, environment, clear=True),
+                patch("app.analysis.request_gpt_analysis", return_value=model_result),
+            ):
+                analyze_bug_origin(self.timeline, cache)
+            with (
+                patch.dict(os.environ, environment, clear=True),
+                patch("app.analysis.request_gpt_analysis") as request,
+            ):
+                result = analyze_bug_origin(self.timeline, cache)
+            self.assertEqual(result["delivery"], "cached")
+            self.assertEqual(result["origin_event_id"], model_result["origin_event_id"])
+            request.assert_not_called()
+
+    def test_stale_live_cache_is_rejected_and_replaced(self) -> None:
+        model_result = deterministic_investigation(self.timeline)
+        environment = {
+            "OPENAI_API_KEY": "test-key",
+            "OPENAI_MODEL": "gpt-5.6",
+            "AI_TIME_MACHINE_ANALYSIS_MODE": "live",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / "analysis.json"
+            stale_payload = {
+                **model_result,
+                "source": "gpt-5.6",
+                "model": "gpt-5.6",
+                "delivery": "live",
+                "generated_at": "2026-07-20T00:00:00+00:00",
+            }
+            cache.write_text(
+                json.dumps(
+                    {
+                        "cache_version": 1,
+                        "evidence_sha256": "stale",
+                        "model": "gpt-5.6",
+                        "payload": stale_payload,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch.dict(os.environ, environment, clear=True),
+                patch("app.analysis.request_gpt_analysis", return_value=model_result) as request,
+            ):
+                result = analyze_bug_origin(self.timeline, cache)
+            self.assertEqual(result["delivery"], "live")
+            self.assertEqual(
+                json.loads(cache.read_text(encoding="utf-8"))["evidence_sha256"],
+                evidence_digest(self.timeline),
+            )
+            request.assert_called_once()
+
+    def test_malformed_live_cache_falls_back_safely(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / "analysis.json"
+            cache.write_text("{not-json", encoding="utf-8")
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "OPENAI_API_KEY": "test-key",
+                        "AI_TIME_MACHINE_ANALYSIS_MODE": "live",
+                    },
+                    clear=True,
+                ),
+                patch(
+                    "app.analysis.request_gpt_analysis",
+                    side_effect=AnalysisError("offline"),
+                ),
+            ):
+                result = analyze_bug_origin(self.timeline, cache)
+            self.assertEqual(result["source"], "evidence-fallback")
+            self.assertEqual(result["delivery"], "fallback")
 
     def test_validator_rejects_evidence_from_a_different_event(self) -> None:
         analysis = deterministic_investigation(self.timeline)
         analysis["causal_chain"][0]["evidence_refs"] = ["not-a-real-commit"]
         with self.assertRaises(AnalysisError):
+            validate_analysis(analysis, self.timeline)
+
+    def test_validator_rejects_cross_field_origin_mismatch(self) -> None:
+        analysis = deterministic_investigation(self.timeline)
+        analysis["origin_event_id"] = analysis["trigger_event_id"]
+        with self.assertRaisesRegex(AnalysisError, "origin event"):
+            validate_analysis(analysis, self.timeline)
+
+    def test_validator_rejects_cross_field_resolution_mismatch(self) -> None:
+        analysis = deterministic_investigation(self.timeline)
+        analysis["resolution_event_ids"] = [analysis["origin_event_id"]]
+        with self.assertRaisesRegex(AnalysisError, "resolution events"):
             validate_analysis(analysis, self.timeline)
 
     def test_valid_codex_artifact_is_loaded_offline(self) -> None:

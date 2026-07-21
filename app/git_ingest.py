@@ -189,6 +189,7 @@ def read_timeline(repository: Path, revision: str = "HEAD") -> dict[str, Any]:
     if _git(repository, "rev-list", "--all", "--count").strip() == "0":
         raise GitRepositoryError(f"Repository has no commits: {repository}")
     head_hash = _validate_revision(repository, revision, "branch or commit")
+    is_orbitcart = repository == DEFAULT_ORBITCART.resolve()
     events: list[dict[str, Any]] = []
     previous_by_file: dict[str, str] = {}
 
@@ -228,7 +229,7 @@ def read_timeline(repository: Path, revision: str = "HEAD") -> dict[str, Any]:
                 "why": why,
                 "rationale_certainty": "missing-evidence" if why == NOT_RECORDED else "confirmed",
                 "certainty": "confirmed",
-                "confidence": 0.98,
+                "confidence": 0.98 if is_orbitcart else None,
                 "files": files,
                 "evidence": [
                     {
@@ -339,6 +340,40 @@ def read_change_context(
         for risk in event["risks"]
         if risk != NOT_RECORDED
     ]
+    missing_rationale = [
+        event for event in range_commits if event["why"] == NOT_RECORDED
+    ]
+    incident_or_fix_paths = {
+        path
+        for item in incidents_and_fixes
+        for path in item["files"]
+    }
+    paths_without_incident_or_fix = sorted(changed_paths - incident_or_fix_paths)
+    missing_evidence: list[str] = []
+    if not changed_files:
+        missing_evidence.append(
+            "No changed files were found between the selected revisions."
+        )
+    else:
+        if missing_rationale:
+            missing_evidence.append(
+                f"{len(missing_rationale)} of {len(range_commits)} range commits do not "
+                "record rationale in Git commit metadata."
+            )
+        if not recorded_risks:
+            missing_evidence.append(
+                "No structured risk is recorded in Git history for the changed files."
+            )
+        if paths_without_incident_or_fix:
+            missing_evidence.append(
+                "No connected incident or fix history was found for: "
+                + ", ".join(paths_without_incident_or_fix)
+                + "."
+            )
+        missing_evidence.append(
+            "Deployment records, issue and review systems, and production telemetry "
+            "are outside this local Git-only evidence boundary."
+        )
     return {
         "repository": {
             "name": timeline["project"]["name"],
@@ -363,9 +398,5 @@ def read_change_context(
         "recent_commits_by_file": recent_by_file,
         "connected_incidents_and_fixes": incidents_and_fixes,
         "recorded_risks": recorded_risks,
-        "missing_evidence": (
-            ["No changed files were found between the selected revisions."]
-            if not changed_files
-            else []
-        ),
+        "missing_evidence": missing_evidence,
     }

@@ -14,6 +14,7 @@ from typing import Any
 
 DEFAULT_MODEL = "gpt-5.6"
 RESPONSES_URL = "https://api.openai.com/v1/responses"
+LIVE_CACHE_VERSION = 1
 CAUSAL_ROLES = ["pressure", "origin", "symptom", "containment", "resolution", "verification"]
 
 ANALYSIS_SCHEMA: dict[str, Any] = {
@@ -198,6 +199,57 @@ def _extract_output_text(response: dict[str, Any]) -> str:
 
 
 def validate_analysis(analysis: dict[str, Any], timeline: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(analysis, dict):
+        raise AnalysisError("The analysis payload was not an object.")
+    for field in ("question", "headline", "finding"):
+        if not isinstance(analysis.get(field), str) or not analysis[field].strip():
+            raise AnalysisError(f"The analysis {field} was invalid.")
+    if analysis.get("certainty") not in {"confirmed", "inferred", "missing-evidence"}:
+        raise AnalysisError("The analysis certainty was invalid.")
+    for field in ("missing_evidence", "risks"):
+        values = analysis.get(field)
+        if (
+            not isinstance(values, list)
+            or any(not isinstance(value, str) or not value.strip() for value in values)
+        ):
+            raise AnalysisError(f"The analysis {field} list was invalid.")
+
+    chain = analysis.get("causal_chain")
+    if (
+        not isinstance(chain, list)
+        or any(not isinstance(item, dict) for item in chain)
+        or [item.get("role") for item in chain] != CAUSAL_ROLES
+    ):
+        raise AnalysisError("The analysis must contain the complete six-stage causal chain.")
+    chain_event_ids = [item.get("event_id") for item in chain]
+    if any(not isinstance(event_id, str) or not event_id for event_id in chain_event_ids):
+        raise AnalysisError("A causal-stage event ID was invalid.")
+    if len(set(chain_event_ids)) != len(chain_event_ids):
+        raise AnalysisError("Each causal stage must reference a distinct event.")
+
+    resolution_event_ids = analysis.get("resolution_event_ids")
+    if (
+        not isinstance(resolution_event_ids, list)
+        or any(not isinstance(event_id, str) or not event_id for event_id in resolution_event_ids)
+    ):
+        raise AnalysisError("The analysis resolution events were invalid.")
+    if any(
+        not isinstance(analysis.get(field), str) or not analysis[field]
+        for field in ("origin_event_id", "trigger_event_id")
+    ):
+        raise AnalysisError("The analysis origin or trigger event was invalid.")
+    if analysis.get("origin_event_id") != chain_event_ids[1]:
+        raise AnalysisError("The origin event did not match the causal chain.")
+    if analysis.get("trigger_event_id") != chain_event_ids[2]:
+        raise AnalysisError("The trigger event did not match the causal chain.")
+    if (
+        not resolution_event_ids
+        or len(set(resolution_event_ids)) != len(resolution_event_ids)
+        or chain_event_ids[4] not in resolution_event_ids
+        or not set(resolution_event_ids).issubset(set(chain_event_ids[3:]))
+    ):
+        raise AnalysisError("The resolution events did not match the causal chain.")
+
     event_by_id = {event["id"]: event for event in timeline["events"]}
     event_ids = set(event_by_id)
     referenced_ids = {
@@ -212,20 +264,51 @@ def validate_analysis(analysis: dict[str, Any], timeline: dict[str, Any]) -> dic
     confidence = analysis.get("confidence")
     if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
         raise AnalysisError("The analysis confidence was invalid.")
-    chain = analysis.get("causal_chain")
-    if not isinstance(chain, list) or [item.get("role") for item in chain] != CAUSAL_ROLES:
-        raise AnalysisError("The analysis must contain the complete six-stage causal chain.")
     for item in chain:
         event = event_by_id[item["event_id"]]
+        if not isinstance(item.get("explanation"), str) or not item["explanation"].strip():
+            raise AnalysisError("A causal-stage explanation was invalid.")
         allowed_refs = {
             event["short_hash"],
             event["commit_hash"],
             *[file["path"] for file in event["files"]],
         }
         references = item.get("evidence_refs", [])
-        if not references or any(reference not in allowed_refs for reference in references):
+        event_paths = {file["path"] for file in event["files"]}
+        if (
+            not isinstance(references, list)
+            or event["short_hash"] not in references
+            or not event_paths.intersection(references)
+            or any(not isinstance(reference, str) or reference not in allowed_refs for reference in references)
+        ):
             raise AnalysisError("The analysis cited evidence outside its referenced event.")
     return analysis
+
+
+def _load_live_cache(
+    timeline: dict[str, Any], cache_path: Path, model: str
+) -> dict[str, Any]:
+    envelope = json.loads(cache_path.read_text(encoding="utf-8"))
+    if not isinstance(envelope, dict) or envelope.get("cache_version") != LIVE_CACHE_VERSION:
+        raise AnalysisError("The live analysis cache version was invalid.")
+    if envelope.get("evidence_sha256") != evidence_digest(timeline):
+        raise AnalysisError("The live analysis cache did not match the current Git evidence.")
+    if envelope.get("model") != model:
+        raise AnalysisError("The live analysis cache did not match the selected model.")
+    payload = envelope.get("payload")
+    if not isinstance(payload, dict):
+        raise AnalysisError("The live analysis cache payload was invalid.")
+    if payload.get("source") != "gpt-5.6" or payload.get("model") != model:
+        raise AnalysisError("The live analysis cache provenance was invalid.")
+    generated_at = envelope.get("generated_at")
+    if (
+        not isinstance(generated_at, str)
+        or not generated_at
+        or payload.get("generated_at") != generated_at
+    ):
+        raise AnalysisError("The live analysis cache generation time was invalid.")
+    result = validate_analysis(payload, timeline)
+    return {**result, "delivery": "cached"}
 
 
 def request_gpt_analysis(timeline: dict[str, Any], api_key: str, model: str = DEFAULT_MODEL) -> dict[str, Any]:
@@ -325,8 +408,10 @@ def analyze_bug_origin(
             pass
 
     if mode == "live" and api_key and cache_path and cache_path.exists():
-        cached = json.loads(cache_path.read_text(encoding="utf-8"))
-        return {**cached, "delivery": "cached"}
+        try:
+            return _load_live_cache(timeline, cache_path, model)
+        except (AnalysisError, json.JSONDecodeError, OSError, TypeError):
+            pass
 
     if mode == "live" and api_key:
         try:
@@ -340,7 +425,14 @@ def analyze_bug_origin(
             }
             if cache_path:
                 cache_path.parent.mkdir(parents=True, exist_ok=True)
-                cache_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+                cache = {
+                    "cache_version": LIVE_CACHE_VERSION,
+                    "evidence_sha256": evidence_digest(timeline),
+                    "model": model,
+                    "generated_at": result["generated_at"],
+                    "payload": result,
+                }
+                cache_path.write_text(json.dumps(cache, indent=2) + "\n", encoding="utf-8")
             return result
         except AnalysisError:
             pass

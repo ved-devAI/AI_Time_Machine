@@ -58,6 +58,16 @@ function eventTypeLabel(event) {
     : label;
 }
 
+function eventEvidenceLabel(event) {
+  return state.isOrbitCart
+    ? `${Math.round(event.confidence * 100)}% confidence`
+    : "Commit + diff verified";
+}
+
+function eventCertaintyLabel(event) {
+  return state.isOrbitCart ? event.certainty : "Git verified";
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -93,7 +103,7 @@ function renderTimeline() {
             <span class="event-meta"><span class="type-badge">${eventTypeLabel(event)}</span><time>${formatDate(event.occurred_at)}</time></span>
             <strong>${escapeHtml(event.title)}</strong>
             <span class="event-summary">${escapeHtml(event.summary)}</span>
-            <span class="event-footer"><code>${escapeHtml(event.short_hash)}</code><span>${event.files.length} file${event.files.length === 1 ? "" : "s"}</span><span class="certainty"><i></i>${escapeHtml(event.certainty)}</span></span>
+            <span class="event-footer"><code>${escapeHtml(event.short_hash)}</code><span>${event.files.length} file${event.files.length === 1 ? "" : "s"}</span><span class="certainty"><i></i>${escapeHtml(eventCertaintyLabel(event))}</span></span>
           </span>
         </button>`,
     )
@@ -142,7 +152,7 @@ function renderDetail(event) {
     </header>
     ${traceable ? `
       <section class="trace-cta">
-        <div><span class="trace-kicker">✦ CAUSAL INVESTIGATION</span><strong>Find where this bug really began</strong><p>Replay a validated Codex analysis grounded in Git evidence.</p></div>
+        <div><span class="trace-kicker">✦ CAUSAL INVESTIGATION</span><strong>Find where this bug really began</strong><p>Replay a reference-validated Codex analysis linked to Git evidence.</p></div>
         <button class="trace-button" id="trace-origin-button"><span>↶</span> Trace bug origin</button>
       </section>` : ""}
     <div class="detail-body">
@@ -155,7 +165,7 @@ function renderDetail(event) {
         <p>${escapeHtml(event.why)}</p>
       </section>
       <section>
-        <div class="section-heading"><p class="section-label">EVIDENCE</p><span class="confidence"><i></i>${Math.round(event.confidence * 100)}% confidence</span></div>
+        <div class="section-heading"><p class="section-label">EVIDENCE</p><span class="confidence"><i></i>${escapeHtml(eventEvidenceLabel(event))}</span></div>
         <div class="evidence-list">
           ${event.evidence.map((item) => `<div class="evidence-item"><span>${item.kind === "commit" ? "⑂" : "⌘"}</span><div><strong>${escapeHtml(item.label)}</strong><p>${escapeHtml(item.value)}</p></div></div>`).join("")}
         </div>
@@ -186,7 +196,7 @@ function closeAsk() {
 }
 
 function answerSource(answer) {
-  if (answer.source === "codex-gpt-5.6") return { label: "GPT-5.6 Sol in Codex · validated", className: "codex" };
+  if (answer.source === "codex-gpt-5.6") return { label: "GPT-5.6 Sol in Codex · reference-validated", className: "codex" };
   if (answer.source === "local-evidence-engine") return { label: "Local evidence engine · deterministic", className: "local" };
   return { label: "Evidence fallback · demo safe", className: "fallback" };
 }
@@ -202,11 +212,11 @@ function renderAskAnswer(answer) {
     <div class="ask-answer-body">
       <section class="ask-verdict">
         <div class="ask-verdict-mark">⌁</div>
-        <div><span class="trace-kicker">EVIDENCE-GROUNDED ANSWER</span><h3>${escapeHtml(answer.headline)}</h3><p>${escapeHtml(answer.answer)}</p></div>
+        <div><span class="trace-kicker">EVIDENCE-LINKED ANSWER</span><h3>${escapeHtml(answer.headline)}</h3><p>${escapeHtml(answer.answer)}</p></div>
         <div class="trace-score"><span>${Math.round(answer.confidence * 100)}%</span><small>${escapeHtml(answer.certainty)} confidence</small></div>
       </section>
       <section class="ask-citations">
-        <div class="ask-section-title"><div><p class="section-label">TRACEABLE EVIDENCE</p><h3>Open any citation in the timeline</h3></div><span>${answer.evidence.length} VERIFIED LINKS</span></div>
+        <div class="ask-section-title"><div><p class="section-label">TRACEABLE EVIDENCE</p><h3>Open any citation in the timeline</h3></div><span>${answer.evidence.length} CHECKED REFERENCES</span></div>
         <div class="ask-evidence-grid">
           ${answer.evidence.map((citation, index) => {
             const event = state.events.find((candidate) => candidate.id === citation.event_id);
@@ -225,7 +235,7 @@ function renderAskAnswer(answer) {
         <ul>${answer.missing_evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
       </section>
     </div>
-    ${provenance ? `<footer class="trace-audit"><span><i></i>Answer set verified against current Git evidence</span><code>evidence ${escapeHtml(provenance.evidence_sha256.slice(0, 10))}</code><code>session ${escapeHtml(provenance.codex_session_id?.slice(0, 13) || "not recorded")}</code></footer>` : ""}`;
+    ${provenance ? `<footer class="trace-audit"><span><i></i>Answer references checked against current Git evidence</span><code>evidence ${escapeHtml(provenance.evidence_sha256.slice(0, 10))}</code><code>session ${escapeHtml(provenance.codex_session_id?.slice(0, 13) || "not recorded")}</code></footer>` : ""}`;
 }
 
 async function askRepo(questionId) {
@@ -386,7 +396,7 @@ function traceNode(item, index, analysis) {
 
 function renderInvestigation(analysis) {
   const sourceLabel = analysis.source === "codex-gpt-5.6"
-    ? "GPT-5.6 Sol in Codex · validated"
+    ? "GPT-5.6 Sol in Codex · reference-validated"
     : analysis.source === "gpt-5.6"
       ? `GPT-5.6 API · ${analysis.delivery}`
       : "Evidence fallback · demo safe";
@@ -421,7 +431,7 @@ function renderInvestigation(analysis) {
         <ul>${analysis.risks.slice(0, 2).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
       </section>
     </div>
-    ${provenance ? `<footer class="trace-audit"><span><i></i>Artifact verified against current Git evidence</span><code>evidence ${escapeHtml(provenance.evidence_sha256.slice(0, 10))}</code><code>session ${escapeHtml(provenance.codex_session_id?.slice(0, 13) || "not recorded")}</code></footer>` : ""}`;
+    ${provenance ? `<footer class="trace-audit"><span><i></i>Artifact references checked against current Git evidence</span><code>evidence ${escapeHtml(provenance.evidence_sha256.slice(0, 10))}</code><code>session ${escapeHtml(provenance.codex_session_id?.slice(0, 13) || "not recorded")}</code></footer>` : ""}`;
 }
 
 async function openTrace() {
@@ -482,6 +492,9 @@ async function loadTimeline() {
     document.querySelector("#stat-commits").textContent = data.stats.commits;
     document.querySelector("#stat-bugs").textContent = data.stats.bugs;
     document.querySelector("#stat-files").textContent = data.stats.files_touched;
+    document.querySelector("#stat-coverage-label").textContent = state.isOrbitCart
+      ? "EVIDENCE COVERAGE"
+      : "COMMIT + DIFF VERIFIED";
     document.querySelector("#stat-coverage").textContent = `${Math.round((data.stats.confirmed / data.stats.commits) * 100)}%`;
     renderTimeline();
     const headline = state.events.find((event) => event.title.toLowerCase().includes("stale checkout"));

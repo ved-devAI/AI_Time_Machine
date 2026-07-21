@@ -76,6 +76,7 @@ class RealRepoModeTests(unittest.TestCase):
         self.assertEqual(event["rationale_certainty"], "missing-evidence")
         self.assertEqual(event["type"], "feature")
         self.assertEqual(event["type_certainty"], "inferred")
+        self.assertIsNone(event["confidence"])
         self.assertEqual(timeline["project"]["mode"], "real-repo")
 
     def test_context_reports_changed_files_history_fixes_and_range_commits(self) -> None:
@@ -90,6 +91,48 @@ class RealRepoModeTests(unittest.TestCase):
         self.assertEqual(len(context["recent_commits_by_file"]["src/widget.py"]), 2)
         self.assertEqual(context["connected_incidents_and_fixes"][0]["type"], "fix")
         self.assertEqual(context["recorded_risks"], [])
+
+    def test_context_reports_trust_gaps_for_non_empty_unstructured_range(self) -> None:
+        base = self.commit_file("src/widget.py", "value = 1\n", "Add widget")
+        self.commit_file("src/widget.py", "value = 2\n", "Tune widget")
+        head = self.commit_file("docs/widget.md", "Widget notes\n", "Document widget")
+
+        context = read_change_context(self.repository, base, head)
+
+        self.assertEqual(len(context["range_commits"]), 2)
+        self.assertEqual(
+            context["missing_evidence"],
+            [
+                "2 of 2 range commits do not record rationale in Git commit metadata.",
+                "No structured risk is recorded in Git history for the changed files.",
+                "No connected incident or fix history was found for: docs/widget.md, src/widget.py.",
+                "Deployment records, issue and review systems, and production telemetry "
+                "are outside this local Git-only evidence boundary.",
+            ],
+        )
+
+    def test_generic_coverage_label_names_commit_and_diff_verification(self) -> None:
+        index = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn('id="stat-coverage-label">EVIDENCE COVERAGE', index)
+        self.assertIn('? "EVIDENCE COVERAGE"', script)
+        self.assertIn(': "COMMIT + DIFF VERIFIED"', script)
+
+    def test_generic_event_ui_separates_git_verification_from_confidence(self) -> None:
+        script = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn(': "Commit + diff verified"', script)
+        self.assertIn('return state.isOrbitCart ? event.certainty : "Git verified"', script)
+        self.assertNotIn("Math.round(event.confidence * 100)}% confidence</span>", script)
+
+    def test_codex_ui_names_reference_validation_precisely(self) -> None:
+        script = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn("GPT-5.6 Sol in Codex · reference-validated", script)
+        self.assertIn("Answer references checked against current Git evidence", script)
+        self.assertIn("Artifact references checked against current Git evidence", script)
+        self.assertNotIn("GPT-5.6 Sol in Codex · validated", script)
 
     def test_analyze_cli_emits_normalized_json(self) -> None:
         self.commit_file("README.md", "proof\n", "Document proof")

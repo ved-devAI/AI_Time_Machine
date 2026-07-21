@@ -8,8 +8,11 @@ timeline explaining why a codebase evolved.
 ![AI Time Machine project thumbnail](frontend/project-thumbnail.png)
 
 This repository contains a working OpenAI Build Week project slice: a generated
-OrbitCart Git repository, Git ingestion, an evidence timeline, validated
+OrbitCart Git repository, Git ingestion, an evidence timeline, reference-validated
 GPT-5.6-in-Codex artifacts, Ask the Repo, and a visual Bug Origin Trace.
+
+For the final submission audit, scoring rationale, and timeboxed priorities,
+see [M5 notes](docs/M5.md).
 
 ## Real Repo Mode
 
@@ -61,7 +64,7 @@ Open <http://127.0.0.1:8765>.
 
 The local app reads the generated OrbitCart Git repository at request time. The
 public demo is an API-free snapshot produced from that same repository during
-deployment. Its timeline and Codex results are validated before publication,
+deployment. Its timeline and Codex references are checked before publication,
 and the UI labels hosted evidence as a verified Git snapshot rather than a live
 model call.
 
@@ -96,11 +99,11 @@ python3 scripts/evaluate_grounding.py
    reproducible GPT-5.6-in-Codex artifact.
 4. `app/analysis.py` verifies artifact provenance, evidence digest, event IDs,
    commit hashes, and file references before returning an investigation.
-5. `app/ask_repo.py` serves three validated, evidence-linked repository answers.
+5. `app/ask_repo.py` serves three reference-validated, evidence-linked repository answers.
 6. `app/repo_questions.py` produces and validates four deterministic answers
    for ordinary repositories.
 7. `app/cli.py` selects a local repository for analysis, context, or serving.
-8. `app/server.py` exposes the selected timeline and branch review while restricting validated
+8. `app/server.py` exposes the selected timeline and branch review while restricting reference-validated
    OrbitCart artifacts to OrbitCart.
 9. `frontend/` renders the Developer Workspace, Ask the Repo, the timeline, and
    the Bug Origin Trace.
@@ -128,7 +131,7 @@ Ask the Repo uses the same workflow with `artifacts/orbitcart/ask-repo.prompt.md
 artifacts are tied to the same OrbitCart evidence digest.
 
 `codex exec` reuses ChatGPT-managed Codex authentication. The app does not need
-an API key to replay the validated result.
+an API key to replay the reference-validated result.
 
 See [the analysis design](docs/ai-analysis.md) for grounding and fallback details
 and [the evaluation guide](docs/EVALUATION.md) for the scorecard.
@@ -142,7 +145,7 @@ python3 scripts/build_public_demo.py
 
 The build writes a static client and a minimal host worker to `dist/`. Pushes to
 `main` run the full judge verification; production releases package the same
-validated build for the public host. No API key or paid runtime call is required.
+reference-validated build for the public host. No API key or paid runtime call is required.
 
 ## Release screenshots
 
