@@ -5,14 +5,27 @@ timeline explaining why a codebase evolved.
 
 **Public demo:** <https://ai-time-machine-demo.vedheshvit.chatgpt.site>
 
+**Demo video:** <https://youtu.be/5LGXtmJNO0U>
+
 ![AI Time Machine project thumbnail](frontend/project-thumbnail.png)
 
-This repository contains a working OpenAI Build Week project slice: a generated
+This repository contains an OpenAI Build Week developer tool: a generated
 OrbitCart Git repository, Git ingestion, an evidence timeline, reference-validated
 GPT-5.6-in-Codex artifacts, Ask the Repo, and a visual Bug Origin Trace.
 
-For the final submission audit, scoring rationale, and timeboxed priorities,
-see [M5 notes](docs/M5.md).
+## How Codex and GPT-5.6 were used
+
+Codex supported architecture exploration, implementation, debugging, UI
+refinement, test development, trust-semantics review, and grounding evaluation.
+
+GPT-5.6 Sol was used through ChatGPT-authenticated Codex to generate the
+committed OrbitCart causal-analysis and Ask the Repo artifacts from repository
+evidence. This generation happened at build time.
+
+The hosted application does not call GPT-5.6 live. It replays an artifact only
+after validating its evidence digest, event IDs, commit references, and affected
+files. If validation fails, the application uses a clearly labeled deterministic
+fallback instead of displaying unsupported model output.
 
 ## Real Repo Mode
 
@@ -49,7 +62,7 @@ chronological order, shared files connect milestones, and the foundation-to-HEAD
 context report is grounded in real changed files. See
 [the M4.5 implementation brief](docs/M4.5_REAL_REPO_MODE.md).
 
-## Clean judge setup
+## Quick start
 
 Requirements: Python 3.11+ and Git. No third-party packages are required.
 
@@ -68,9 +81,21 @@ deployment. Its timeline and Codex references are checked before publication,
 and the UI labels hosted evidence as a verified Git snapshot rather than a live
 model call.
 
+## Quick test without rebuilding
+
+Analyze the current Git worktree directly, or open it in Real Repo Mode:
+
+```bash
+python3 -m app.cli analyze .
+python3 -m app.cli serve --open
+```
+
+These commands read the existing repository history and do not regenerate the
+OrbitCart demo repository.
+
 ## Verify everything
 
-Run the complete zero-dependency judge check:
+Run the complete zero-dependency verification suite:
 
 ```bash
 python3 scripts/verify.py
@@ -144,7 +169,7 @@ python3 scripts/build_public_demo.py
 ```
 
 The build writes a static client and a minimal host worker to `dist/`. Pushes to
-`main` run the full judge verification; production releases package the same
+`main` run the full verification suite; production releases package the same
 reference-validated build for the public host. No API key or paid runtime call is required.
 
 ## Release screenshots
